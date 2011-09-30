@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+OpenIDE-Module: dk.sdu.mmmi.featuretracer/3
+OpenIDE-Module-Localizing-Bundle: dk/sdu/mmmi/featuretracer/Bundle.properties
+OpenIDE-Module-Specification-Version: 3.0
+

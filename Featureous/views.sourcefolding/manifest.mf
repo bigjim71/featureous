@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+OpenIDE-Module: dk.sdu.mmmi.featureous.sourcefolding/3
+OpenIDE-Module-Layer: dk/sdu/mmmi/featureous/sourcefolding/layer.xml
+OpenIDE-Module-Localizing-Bundle: dk/sdu/mmmi/featureous/sourcefolding/Bundle.properties
+OpenIDE-Module-Specification-Version: 3.0
+

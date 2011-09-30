@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Featureous is distributed under the GPLv3 license.
+
+University of Southern Denmark, 2011
+
+-->
+
+<!DOCTYPE filesystem PUBLIC "-//NetBeans//DTD Filesystem 1.2//EN" "http://www.netbeans.org/dtds/filesystem-1_2.dtd">
+<filesystem>
+    <folder name="Editors">
+    <folder name="SideBar">
+        <file name="dk-sdu-mmmi-featureous-sourcefolding-FeatureFoldingSidebarFactory.instance">
+            <attr name="position" intvalue="3100"/>
+        </file>
+        <!-- place in between line numbers sidebar and folding sidebar #57544 -->
+    </folder>
+    </folder>
+</filesystem>

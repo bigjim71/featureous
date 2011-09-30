@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+OpenIDE-Module: dk.sdu.mmmi.featureous.core/3
+OpenIDE-Module-Layer: dk/sdu/mmmi/featureous/core/layer.xml
+OpenIDE-Module-Localizing-Bundle: dk/sdu/mmmi/featureous/core/Bundle.properties
+OpenIDE-Module-Specification-Version: 3.0
+

@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+OpenIDE-Module: dk.sdu.mmmi.featureous.remodularization/3
+OpenIDE-Module-Localizing-Bundle: dk/sdu/mmmi/featureous/remodularization/Bundle.properties
+OpenIDE-Module-Specification-Version: 3.0
+

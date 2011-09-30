@@ -1,0 +1,16 @@
+package dk.sdu.mmmi.remodularization.features.transformations.helpers;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+/**
+ *
+ * @author ao
+ */
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface OrgPkg {
+    String value();
+}

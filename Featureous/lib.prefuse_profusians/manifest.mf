@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+AutoUpdate-Show-In-Client: false
+OpenIDE-Module: prefuse_profusians/3
+OpenIDE-Module-Localizing-Bundle: prefuse_profusians/Bundle.properties
+OpenIDE-Module-Specification-Version: 3.0
+
