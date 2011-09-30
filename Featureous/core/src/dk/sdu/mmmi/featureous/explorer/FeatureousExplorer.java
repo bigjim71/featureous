@@ -400,7 +400,7 @@ public final class FeatureousExplorer extends TopComponent implements ExplorerMa
         resultChanged(null);
 //        au.actionPerformed(null);
 //        UIUtils.setupDefaultColorForAll(this);
-        checkLicensing();
+//        checkLicensing();
     }
 
     @Override
