@@ -81,6 +81,7 @@ public class FeatureColoringSidebar extends TopComponent {
     @Override
     public void addNotify() {
         super.addNotify();
+        //Adding a bunch of document listeners
         Utilities.getDocument(target).addDocumentListener(dl);//PostModificationDocumentListener(dl);
         FoldHierarchy fh = FoldHierarchy.get(target);
         fh.addFoldHierarchyListener(fhl);
