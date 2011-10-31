@@ -31,16 +31,15 @@ public class VirtualScattering extends AbstractMetric{
     public void calculateAll(Set<TraceModel> ftms, StaticDependencyModel sdm) {
         Double res = 0d;
 
-        List<TraceModel> feats = new ArrayList<TraceModel>(ftms);
-        feats.removeAll(ScaTangUtil.getInsulatedFeatures(ftms));
+        List<JPackage> pkgs = ScaTangUtil.getNonInsulatedPackages(ftms, sdm);
 
-        if(feats.size()==0 || sdm.getPackages().size()==0){
+        if(ftms.size()==0 || pkgs.size()==0){
             return;
         }
 
-        for(TraceModel ftm : feats){
-            res += sca(ftm, sdm);
-            setResultForSubject(res.floatValue()/((float)feats.size()*sdm.getPackages().size()), ftm.getName());
+        for(TraceModel ftm : ftms){
+            res = sca(ftm, sdm);
+            setResultForSubject(res.floatValue()/((float)ftms.size()*pkgs.size()), ftm.getName());
         }
     }
 
@@ -54,10 +53,10 @@ public class VirtualScattering extends AbstractMetric{
         }
 
         if(a.size()<1){
-            throw new RuntimeException("Bug calculating a");
+//            throw new RuntimeException("Bug calculating a");
         }
 
-        return a.size() - 1d;
+        return (double)a.size();
     }
 
     @Override

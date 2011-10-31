@@ -9,6 +9,9 @@ import dk.sdu.mmmi.featureous.core.controller.Controller;
 import dk.sdu.mmmi.featureous.core.model.TraceModel;
 import dk.sdu.mmmi.featureous.core.ui.OutputUtil;
 import dk.sdu.mmmi.featureous.metrics.AbstractMetric;
+import dk.sdu.mmmi.featureous.metrics.Result;
+import dk.sdu.mmmi.featureous.metrics.concernmetrics.Scattering;
+import dk.sdu.mmmi.featureous.metrics.concernmetrics.Tangling;
 import dk.sdu.mmmi.featureous.remodularization.logic.MainRemodularization;
 import dk.sdu.mmmi.featureous.remodularization.logic.objectives.CohesionObjective;
 import dk.sdu.mmmi.featureous.remodularization.logic.objectives.CouplingObjective;
@@ -312,7 +315,13 @@ public class PostView extends JPanel {
             this.remodSdm = remodSdm;
             tms = Controller.getInstance().getTraceSet().getFirstLevelTraces();
             this.org = objective.createObjective().calculateAndReturnRes(tms, orgSdm);
-            this.remod = objective.createObjective().calculateAndReturnRes(tms, remodSdm);
+            AbstractMetric postObj = objective.createObjective();
+            this.remod = postObj.calculateAndReturnRes(tms, remodSdm);
+            StringBuilder sb = new StringBuilder(postObj.getName()+";val"+"\n");
+            for(Result res : postObj.getResults()){
+                sb.append(res.name + ";"+res.value+"\n");
+            }
+            OutputUtil.log(sb.toString());
             msg = objective.getObjectiveName() + ": " + org + " -> " + remod + " -> ";
             this.postWorkbench = postWorkbench;
             this.objective = objective;
@@ -348,6 +357,12 @@ public class PostView extends JPanel {
         postToolbar.add(postWorkbench.getSatelliteView(), BorderLayout.WEST);
         JPanel controls = new JPanel(new GridLayout(5, 1));
         controls.add(new JLabel("Measures: [original]->[proposed]->[adjusted]"));
+        Scattering sca1 = new Scattering(true);
+        sca1.calculateAll(Controller.getInstance().getTraceSet().getFirstLevelTraces(), orgSdm);
+        OutputUtil.log("orgSca: " + sca1.getResult());
+        Tangling tan1 = new Tangling(true);
+        tan1.calculateAll(Controller.getInstance().getTraceSet().getFirstLevelTraces(), orgSdm);
+        OutputUtil.log("orgTan: " + tan1.getResult());
         MetricLabel sca = new MetricLabel(postWorkbench, new VirtualScatteringObjective(), orgSdm, newSdm);
         controls.add(sca);
         MetricLabel tang = new MetricLabel(postWorkbench, new VirtualTanglingObjective(), orgSdm, newSdm);
@@ -379,6 +394,10 @@ public class PostView extends JPanel {
     private StaticDependencyModel computeNewSdm(ProgressHandle progressHandle, boolean factorSingle) {
         StaticDependencyModel newSdm = null;
         try {
+//            {
+//                progressHandle.progress("Featureous: simulating clean split");
+//                CleanSplitSimulation.cleanSplitCurrentTraces();
+//            }
             progressHandle.progress("Featureous: remodularizing");
             newSdm = MainRemodularization.findNewModularization(orgSdm, progressHandle,
                     selectedProviders, factorSingle, iterations, population, mutation);

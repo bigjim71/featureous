@@ -37,7 +37,6 @@ public class RemodularizationOF implements ParetoObjectiveFunction{
     }
 
     public Double[] evaluateChromosomeFitness(DecValChromosome h) {
-        //TODO: make it use the providers
         StaticDependencyModel dm = createNewModelFromChromosome(h);
         Double[] res = new Double[objectiveProviders.size()];
         for(int i = 0; i<objectiveProviders.size(); i++){

@@ -23,6 +23,15 @@ import java.util.Set;
 public class ScaTangUtil {
 
     public static List<JPackage> getInsulatedPackages(Set<TraceModel> ftms, StaticDependencyModel dm){
+        Set<JPackage> usedPacks = new HashSet<JPackage>(getNonInsulatedPackages(ftms, dm));
+
+        List<JPackage> res = new ArrayList<JPackage>();
+        res.addAll(dm.getPackages());
+        res.removeAll(usedPacks);
+        return res;
+    }
+
+    public static List<JPackage> getNonInsulatedPackages(Set<TraceModel> ftms, StaticDependencyModel dm){
         Set<JPackage> usedPacks = new HashSet<JPackage>();
         for(TraceModel ftm : ftms){
             for(ClassModel t : ftm.getClassSet()){
@@ -33,10 +42,7 @@ public class ScaTangUtil {
             }
         }
 
-        List<JPackage> res = new ArrayList<JPackage>();
-        res.addAll(dm.getPackages());
-        res.removeAll(usedPacks);
-        return res;
+        return new ArrayList<JPackage>(usedPacks);
     }
 
     public static Set<String> getNonInsulatedPackages(Set<TraceModel> ftms){

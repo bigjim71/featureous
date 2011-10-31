@@ -7,7 +7,6 @@ package dk.sdu.mmmi.featureous.core.model;
 
 import dk.sdu.mmmi.featuretracer.lib.featureLocation.model.Execution;
 import dk.sdu.mmmi.featuretracer.lib.featureLocation.model.Type;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -114,6 +113,12 @@ public class ClassModel implements Comparable<ClassModel> {
         if (!allExecutables.contains(method)) {
             allExecutables.add(method);
         }
+    }
+    
+    public void removeMethod(String method){
+        feps.remove(method);
+        constructors.remove(method);
+        allExecutables.remove(method);
     }
 
     public void addFep(String method) {

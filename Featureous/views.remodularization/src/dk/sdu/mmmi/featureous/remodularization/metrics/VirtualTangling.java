@@ -12,7 +12,7 @@ import dk.sdu.mmmi.featureous.metrics.concernmetrics.ScaTangUtil;
 import dk.sdu.mmmi.srcUtils.sdm.model.JPackage;
 import dk.sdu.mmmi.srcUtils.sdm.model.StaticDependencyModel;
 import dk.sdu.mmmi.srcUtils.sdm.model.Util;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -30,39 +30,34 @@ public class VirtualTangling extends AbstractMetric{
     public void calculateAll(Set<TraceModel> ftms, StaticDependencyModel sdm) {
         Double res = 0d;
 
-        List<JPackage> packs = new ArrayList<JPackage>(sdm.getPackages());
-        packs.removeAll(ScaTangUtil.getInsulatedPackages(ftms, sdm));
+        List<JPackage> pkgs = ScaTangUtil.getNonInsulatedPackages(ftms, sdm);
 
-        if(packs.size()==0 || ftms.size()==0){
+        if(pkgs.size()==0 || ftms.size()==0){
             return;
         }
 
-        for(JPackage pack : packs){
-            res += tang(ftms, pack, sdm);
-            setResultForSubject(res.floatValue()/((float)ftms.size()*packs.size()), pack.getQualName());
+        for(JPackage pack : pkgs){
+            res = tang(ftms, pack, sdm);
+            setResultForSubject(res.floatValue()/((float)ftms.size()*pkgs.size()), pack.getQualName());
         }
     }
 
     private Double tang(Set<TraceModel> ftms, JPackage pack, StaticDependencyModel dm) {
-        List<TraceModel> f = new ArrayList<TraceModel>();
+        Set<TraceModel> f = new HashSet<TraceModel>();
         for(TraceModel ftm : ftms){
             for (ClassModel t : ftm.getClassSet()) {
                 JPackage p = Util.getTypesPackage(t.getName(), dm);
-                if (p != null && p.getQualName().equals(pack.getQualName())
-                        && !f.contains(ftm)) {
+                if (p != null && p.getQualName().equals(pack.getQualName())) {
                     f.add(ftm);
                 }
             }
         }
 
-        if(f.size() > ftms.size()){
+        if(f.size() > ftms.size() || f.size()==0){
             throw new RuntimeException("Bug calculating f");
         }
 
-        if(f.size()==0){
-            return 0d;
-        }
-        return f.size() - 1d;
+        return (double) f.size();
     }
 
     @Override

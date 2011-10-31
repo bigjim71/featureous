@@ -6,7 +6,7 @@
 package dk.sdu.mmmi.featureous.remodularization.logic.objectives;
 
 import dk.sdu.mmmi.featureous.metrics.AbstractMetric;
-import dk.sdu.mmmi.featureous.metrics.concernmetrics.Tangling;
+import dk.sdu.mmmi.featureous.remodularization.metrics.VirtualTangling;
 import dk.sdu.mmmi.featureous.remodularization.spi.RemodularizationObjectiveProvider;
 import org.openide.util.lookup.ServiceProvider;
 
@@ -24,7 +24,7 @@ public class TanglingObjective implements RemodularizationObjectiveProvider{
 
     @Override
     public AbstractMetric createObjective() {
-        return new Tangling(true);
+        return new VirtualTangling();
     }
 
     @Override
