@@ -12,7 +12,6 @@ import java.util.List;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectUtils;
 import org.netbeans.api.project.ui.OpenProjects;
-import org.netbeans.modules.java.j2seproject.J2SEProject;
 import org.netbeans.spi.project.support.ant.AntProjectHelper;
 import org.netbeans.spi.project.support.ant.PropertyProvider;
 import org.netbeans.spi.project.support.ant.PropertyUtils;
@@ -29,9 +28,6 @@ public class NBJavaSrcUtils {
 
     public static Project getMainProject() {
         Project p = OpenProjects.getDefault().getMainProject();
-        if(!(p instanceof J2SEProject)){
-            return null;
-        }
         return p;
     }
 
@@ -40,7 +36,7 @@ public class NBJavaSrcUtils {
     }
 
     public static String[] getSrcDirs(Project p){
-        if(p==null || !(p instanceof J2SEProject)){
+        if(p==null){
             return new String[]{null};
         }
         String path = p.getProjectDirectory().getPath();

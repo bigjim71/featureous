@@ -12,7 +12,6 @@ import dk.sdu.mmmi.featureous.core.model.TraceModel;
 import dk.sdu.mmmi.featureous.core.model.TraceSet;
 import dk.sdu.mmmi.featureous.sourcehighlighter.api.FeatureCategoryMarker;
 import dk.sdu.mmmi.featureous.sourcehighlighter.api.LineInfoTag;
-import dk.sdu.mmmi.featureous.sourcehighlighter.api.MethodPositionVisitor;
 import dk.sdu.mmmi.srcUtils.EditorAnalysis;
 import java.awt.Color;
 import java.util.HashSet;
@@ -23,6 +22,8 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.JTextComponent;
 import org.netbeans.api.editor.fold.Fold;
 import org.netbeans.api.editor.fold.FoldHierarchy;
+import org.netbeans.editor.BaseDocument;
+import org.netbeans.editor.Utilities;
 import org.openide.util.Exceptions;
 import recoder.abstraction.Constructor;
 import recoder.abstraction.Field;
@@ -39,7 +40,7 @@ import recoder.kit.Transformation;
  *
  * @author ao
  */
-public class FeatureBarExtractor extends Transformation implements EditorAnalysis{
+public class FeatureBarExtractor extends Transformation implements EditorAnalysis {
 
     private final List<FeatureCategoryMarker> markers = new LinkedList<FeatureCategoryMarker>();
     private final List<LineInfoTag> tags = new LinkedList<LineInfoTag>();
@@ -74,15 +75,14 @@ public class FeatureBarExtractor extends Transformation implements EditorAnalysi
                 if (sel.size() == 1) {
                     final TraceModel tm = Controller.getInstance().getTraceSet().getFirstLevelTraceByName(sel.iterator().next());
                     TreeWalker tw = new TreeWalker(getSourceInfo().getMethodDeclaration(m));
-                    while(tw.next()){
+                    while (tw.next()) {
 
-                        if(tw.getProgramElement() instanceof MethodReference){
+                        if (tw.getProgramElement() instanceof MethodReference) {
                             MethodReference x = (MethodReference) tw.getProgramElement();
 //                            OutputUtil.log(x.getName());
-                            for(OrderedBinaryRelation<String, Integer> r : tm.getMethodInvocations()){
-                                if(compareAJMethodSignWithJavaMethodName(r.getFirst(), m.getName())
-                                        && compareAJMethodSignWithJavaMethodName(r.getSecond(), x.getName())){
-
+                            for (OrderedBinaryRelation<String, Integer> r : tm.getMethodInvocations()) {
+                                if (compareAJMethodSignWithJavaMethodName(r.getFirst(), m.getName())
+                                        && compareAJMethodSignWithJavaMethodName(r.getSecond(), x.getName())) {
 //                                    OutputUtil.log("Feat-local: " + r.getFirst() + "->" + r.getSecond());
                                 }
                             }
@@ -90,7 +90,7 @@ public class FeatureBarExtractor extends Transformation implements EditorAnalysi
                     }
                 }
             }
-            
+
             for (final Field f : getCrossReferenceSourceInfo().getFields(td)) {
                 handleField(f);
             }
@@ -112,7 +112,7 @@ public class FeatureBarExtractor extends Transformation implements EditorAnalysi
                     for (TraceModel tm : ts.getFirstLevelTraces()) {
                         if (tm.hasClass(cm.getName())) {
                             feats.add(tm.getName());
-                            if(!tm.getClass(cm.getName()).getInstancesCreated().isEmpty()){
+                            if (!tm.getClass(cm.getName()).getInstancesCreated().isEmpty()) {
                                 instFeats.add(tm.getName());
                             }
                         }
@@ -128,9 +128,9 @@ public class FeatureBarExtractor extends Transformation implements EditorAnalysi
                         getFoldedLineNumberByLine(target, td.getStartPosition().getLine()),
                         getFoldedLineNumberByLine(target, td.getStartPosition().getLine()),
                         feats, col));
-                if(!instFeats.isEmpty()){
+                if (!instFeats.isEmpty()) {
                     tags.add(new LineInfoTag(getFoldedLineNumberByLine(target, td.getStartPosition().getLine()),
-                            "Instantiated by:\n"+instFeats));
+                            "Instantiated by:\n" + instFeats));
                 }
             } catch (BadLocationException ex) {
                 Exceptions.printStackTrace(ex);
@@ -177,7 +177,7 @@ public class FeatureBarExtractor extends Transformation implements EditorAnalysi
                                 feats, mColor));
                     }
                 } else {
-                    markers.add(new FeatureCategoryMarker(ms, 
+                    markers.add(new FeatureCategoryMarker(ms,
                             getFoldedLineNumberByLine(target, getSourceInfo().getMethodDeclaration(m).getStartPosition().getLine()),
                             getFoldedLineNumberByLine(target, getSourceInfo().getMethodDeclaration(m).getEndPosition().getLine()),
                             feats, mColor));
@@ -187,8 +187,8 @@ public class FeatureBarExtractor extends Transformation implements EditorAnalysi
             }
         }
     }
-    
-        public void handleField(Field f) {
+
+    public void handleField(Field f) {
         if (!(f instanceof FieldSpecification)) {
             return;
         }
@@ -204,7 +204,7 @@ public class FeatureBarExtractor extends Transformation implements EditorAnalysi
                             boolean match = false;
 
                             match = mm.endsWith(getSourceInfo().getContainingClassType(f).getName() + "." + f.getName());
-                            
+
                             if (match) {
                                 fs = mm;
                                 feats.add(tm.getName());
@@ -219,9 +219,9 @@ public class FeatureBarExtractor extends Transformation implements EditorAnalysi
         if (usageCount != 0) {
             Color mColor = Controller.getInstance().getAffinity().getFieldAffinity(fs).color;
             try {
-                markers.add(new FeatureCategoryMarker(fs, 
-                        getFoldedLineNumberByLine(target, ((FieldSpecification)f).getStartPosition().getLine()),
-                        getFoldedLineNumberByLine(target, ((FieldSpecification)f).getEndPosition().getLine()),
+                markers.add(new FeatureCategoryMarker(fs,
+                        getFoldedLineNumberByLine(target, ((FieldSpecification) f).getStartPosition().getLine()),
+                        getFoldedLineNumberByLine(target, ((FieldSpecification) f).getEndPosition().getLine()),
                         feats, mColor));
             } catch (BadLocationException ex) {
                 Exceptions.printStackTrace(ex);
@@ -242,8 +242,8 @@ public class FeatureBarExtractor extends Transformation implements EditorAnalysi
                 for (int i = 0; i < root.getFoldCount(); i++) {
                     Fold curr = root.getFold(i);
                     if (curr.isCollapsed()) {
-                        int endLine = MethodPositionVisitor.getRawLineNumber(document, curr.getEndOffset());
-                        int startLine = MethodPositionVisitor.getRawLineNumber(document, curr.getStartOffset());
+                        int endLine = getRawLineNumber(document, curr.getEndOffset());
+                        int startLine = getRawLineNumber(document, curr.getStartOffset());
                         if (endLine < line) {
                             minusRows += endLine - startLine;
                         } else if (startLine <= line && endLine >= line) {
@@ -254,6 +254,34 @@ public class FeatureBarExtractor extends Transformation implements EditorAnalysi
             }
         }
         return line - minusRows;
+    }
+
+    public static int getRawLineNumber(JTextComponent document, long offset) throws BadLocationException {
+        return Utilities.getRowCount(Utilities.getDocument(document), 0, (int) offset);
+    }
+
+    public static int getFoldedLineNumber(JTextComponent document, long offset) throws BadLocationException {
+        int minusRows = 0;
+        BaseDocument doc = Utilities.getDocument(document);
+        FoldHierarchy fh = FoldHierarchy.get(document);
+        if (fh != null) {
+            Fold root = fh.getRootFold();
+            if (root != null) {
+                for (int i = 0; i < root.getFoldCount(); i++) {
+                    Fold curr = root.getFold(i);
+                    if (curr.isCollapsed()) {
+                        if (curr.getEndOffset() < offset) {
+                            minusRows += Utilities.getRowCount(doc,
+                                    curr.getStartOffset(), curr.getEndOffset()) - 1;
+                        } else if (curr.getStartOffset() <= offset && curr.getEndOffset() >= offset) {
+                            minusRows += Utilities.getRowCount(doc,
+                                    curr.getStartOffset(), (int) offset) - 1;
+                        }
+                    }
+                }
+            }
+        }
+        return getRawLineNumber(document, offset) - minusRows;
     }
 
     @Override

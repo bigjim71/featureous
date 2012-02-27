@@ -607,7 +607,7 @@ public final class FeatureousExplorer extends TopComponent implements ExplorerMa
                 }
             }
 //            }
-            traceRoot = t.getName();
+            traceRoot = NBJavaSrcUtils.getProjName(NBJavaSrcUtils.getMainProject()) + ": " + t.getName();
             Controller.getInstance().addTraces(traces.values().toArray(new File[]{}));
         }
     }

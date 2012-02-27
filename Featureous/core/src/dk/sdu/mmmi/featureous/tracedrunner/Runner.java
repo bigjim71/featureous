@@ -43,36 +43,32 @@ import org.openide.util.Exceptions;
 public class Runner {
 
     private final String sep = System.getProperty("file.separator");
-    
+
     public void execute(Project proj, String command) throws IOException {
 
         if (proj instanceof J2SEProject) {
             J2SEProject jproj = (J2SEProject) proj;
             FileObject buildScript = J2SEProjectUtil.getBuildXml(jproj);
 
+            File destFeatureTracer = new File(proj.getProjectDirectory().getPath() + sep + "lib" + sep + "feature-tracer.jar");
+
             Map<String, String> properties = getProjectProperties(proj);
             String buildDir = properties.get("build.dir");
-            File dest = new File(proj.getProjectDirectory().getPath() + sep + buildDir + sep+ "aspectjweaver_ft.jar");
-            File destFt = new File(proj.getProjectDirectory().getPath() + sep + "lib"+sep+"ft.jar");
+            File destAgent = new File(proj.getProjectDirectory().getPath() + sep + "lib" + sep + "btrace-agent-ft.jar");
+            File destAgentBoot = new File(proj.getProjectDirectory().getPath() + sep + "lib" + sep + "btrace-boot.jar");
+            File destScript = new File(proj.getProjectDirectory().getPath() + sep + buildDir + sep + "FeatureTracer.class");
 
-            createJarsIfNeeded(dest, destFt);
+            copyFilesIfNeeded(destFeatureTracer, destAgent, destAgentBoot, destScript);
             
-            FileObject antRoot = jproj.getProjectDirectory();
-            FileObject libRoot = antRoot.getFileObject("src");
-            URI jarURI; 
-            try {
-                jarURI = FileUtil.urlForArchiveOrDir(destFt).toURI();
-                URI[] newLibs = new URI[]{jarURI};
-                ProjectClassPathModifier.addRoots(newLibs, libRoot, ClassPath.COMPILE); 
-            } catch (URISyntaxException ex) {
-                Exceptions.printStackTrace(ex);
-            }
-
-            Properties pp = createAgentArgsProperty(dest);
-
-            deleteBuildAops(proj, buildDir);
+            makeProjectDependency(jproj, destFeatureTracer);
+            makeProjectDependency(jproj, destAgent);
+            makeProjectDependency(jproj, destAgentBoot);
             
-            if (createAopXmlIfNeeded(proj)) {
+            Properties pp = createAgentArgsProperty(destAgent, destScript, destFeatureTracer, proj);
+
+//            deleteBuildAops(proj, buildDir);
+
+            if (createXmlConfigIfNeeded(proj)) {
                 return;
             }
 
@@ -83,25 +79,36 @@ public class Runner {
             } catch (IllegalArgumentException ex) {
                 Exceptions.printStackTrace(ex);
             }
-        }else if(proj instanceof NbModuleProject){
+        } else if (proj instanceof NbModuleProject) {
             NbModuleProject modProj = (NbModuleProject) proj;
             //run.args.extra=-J-Dorg.netbeans.ProxyClassLoader.level=1000 -J-Xmx512m -J-XX:MaxPermSize=256m
             throw new RuntimeException("Not supported yet...");
         }
     }
 
-    private boolean createAopXmlIfNeeded(Project proj) throws IOException {
-        File f = new File(proj.getProjectDirectory().getPath() + sep 
-                + "src"+sep+"META-INF");
-        if (!f.exists() || !f.isDirectory()) {
-            f.mkdir();
+    private void makeProjectDependency(J2SEProject jproj, File jar) throws UnsupportedOperationException, IOException {
+        FileObject antRoot = jproj.getProjectDirectory();
+        FileObject libRoot = antRoot.getFileObject("src");
+        URI jarURI;
+        try {
+            jarURI = FileUtil.urlForArchiveOrDir(jar).toURI();
+            URI[] newLibs = new URI[]{jarURI};
+            ProjectClassPathModifier.addRoots(newLibs, libRoot, ClassPath.COMPILE);
+        } catch (URISyntaxException ex) {
+            Exceptions.printStackTrace(ex);
         }
-        f = new File(proj.getProjectDirectory().getPath() + sep+"src"+sep
-                +"META-INF"+sep+"aop.xml");
+    }
+
+    private boolean createXmlConfigIfNeeded(Project proj) throws IOException {
+        File f = new File(proj.getProjectDirectory().getPath() + sep
+                + "dk.sdu.mmmi.featuretracer.xml");
         if (!f.exists()) {
             OutputUtil.log("Creating default aop.xml file for the project.");
-            createDefAopXml(f, proj);
-            DialogDisplayer.getDefault().notifyLater(new NotifyDescriptor.Message("Created template aop.xml in src/META-INF.\n Please supply your project information."));
+            FileUtil.createData(f);
+            InputStream sourceXMLFileStream = Util.getXMLDescriptor();
+            copy(sourceXMLFileStream, f);
+//            createDefAopXml(f, proj);
+            DialogDisplayer.getDefault().notifyLater(new NotifyDescriptor.Message("Created template dk.sdu.mmmi.featuretracer.xml descriptor in the project's directory.\n Please supply your project's root package."));
             return true;
         }
         return false;
@@ -109,36 +116,49 @@ public class Runner {
 
     private void deleteBuildAops(Project proj, String bd) {
         File f = new File(proj.getProjectDirectory().getPath() + sep + bd + sep + "classes"
-                +sep+"META-INF"+sep+"aop.xml");
+                + sep + "META-INF" + sep + "aop.xml");
         if (f.exists()) {
             f.delete();
         }
         f = new File(proj.getProjectDirectory().getPath() + sep + bd + sep + "test"
-                +sep+"classes"+sep+"META-INF"+sep+"aop.xml");
+                + sep + "classes" + sep + "META-INF" + sep + "aop.xml");
         if (f.exists()) {
             f.delete();
         }
     }
 
-    private Properties createAgentArgsProperty(File dest) {
+    private Properties createAgentArgsProperty(File destAgent, File destScript, File desFeatureTracer, Project proj) {
+        File xmlDir = new File(proj.getProjectDirectory().getPath());
         Properties pp = new Properties();
         String args = "";
         // TODO: preserve existing command line
-        args += " -javaagent:\"" + dest.getAbsolutePath() + "\"";
-        args += " -Daj.weaving.verbose=true";
-        args += " -Daj.weaving.debug=true";
+        // -Xbootclasspath/a:./FeatureTracer.jar 
+        //-javaagent:../build/btrace-agent.jar=unsafe=true,debug=false,noServer=true,stdout=true,scriptdir=./precomp/dk/sdu/mmmi/featuretracer/btrace,probeDescPath=.
+        args += " -Xbootclasspath/a:\"" + desFeatureTracer.getAbsolutePath() + "\""
+                + " -javaagent:\"" + destAgent.getAbsolutePath()
+                + "=unsafe=true,debug=false,noServer=true,stdout=true,scriptdir="
+                + destScript.getParentFile().getAbsolutePath() + ",probeDescPath="+xmlDir.getAbsolutePath()+"\" ";
         pp.put(JavaRunner.PROP_RUN_JVMARGS, args);
         return pp;
     }
 
-    private void createJarsIfNeeded(File dest, File destFt) throws IOException {
-        if (!dest.exists() || !destFt.exists()) {
-            FileUtil.createData(dest);
-            InputStream sourceFileStream = getClass().getResourceAsStream("/dk/sdu/mmmi/featureous/tracedrunner/aspectjweaver.jar");
-            copy(sourceFileStream, dest);
+    private void copyFilesIfNeeded(File destFt, File destAgent, File destAgentBoot, File destScript) throws IOException {
+        if (!destAgent.exists() || !destAgentBoot.exists() || !destFt.exists() || !destScript.exists()) {
             FileUtil.createData(destFt);
-            InputStream sourceFTFileStream = Util.getFTStream();
+            InputStream sourceFTFileStream = Util.getFTJarStream();
             copy(sourceFTFileStream, destFt);
+
+            FileUtil.createData(destScript);
+            InputStream sourceClassFileStream = Util.getFTClassStream();
+            copy(sourceClassFileStream, destScript);
+
+            FileUtil.createData(destAgent);
+            InputStream sourceAgentFileStream = Util.getBtraceAgentStream();
+            copy(sourceAgentFileStream, destAgent);
+
+            FileUtil.createData(destAgentBoot);
+            InputStream sourceAgentBootFileStream = Util.getBtraceAgentBootStream();
+            copy(sourceAgentBootFileStream, destAgentBoot);
         }
     }
 

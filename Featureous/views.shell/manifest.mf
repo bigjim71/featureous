@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+OpenIDE-Module: dk.sdu.mmmi.featureous.shell
+OpenIDE-Module-Localizing-Bundle: dk/sdu/mmmi/featureous/shell/Bundle.properties
+OpenIDE-Module-Specification-Version: 1.0
+

@@ -3,25 +3,28 @@
  *
  * University of Southern Denmark, 2011
  */
-package dk.sdu.mmmi.featureous.remodularization.metrics;
+package dk.sdu.mmmi.featureous.remodularization.logic.objectives;
 
 import dk.sdu.mmmi.featureous.metrics.AbstractMetric;
+import dk.sdu.mmmi.featureous.remodularization.metrics.PkgSizeDistribution;
 import dk.sdu.mmmi.featureous.remodularization.spi.RemodularizationObjectiveProvider;
+import org.openide.util.lookup.ServiceProvider;
 
 /**
  *
  * @author ao
  */
-public class VirtualTanglingObjective implements RemodularizationObjectiveProvider{
+@ServiceProvider(service=RemodularizationObjectiveProvider.class)
+public class PkgSizeDistributionObjective implements RemodularizationObjectiveProvider{
 
     @Override
     public String getObjectiveName() {
-        return "Tangling of features in packages";
+        return "[Principle] Reduce non-uniformity of package sizes (Min)";
     }
 
     @Override
     public AbstractMetric createObjective() {
-        return new VirtualTangling();
+        return new PkgSizeDistribution();
     }
 
     @Override

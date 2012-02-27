@@ -14,8 +14,8 @@ import dk.sdu.mmmi.featureous.core.model.TraceModel;
 import dk.sdu.mmmi.featureous.core.model.TraceSet;
 import dk.sdu.mmmi.featureous.core.ui.OutputUtil;
 import dk.sdu.mmmi.featureous.metrics.concernmetrics.ScaTangUtil;
-import dk.sdu.mmmi.featureous.remodularization.metrics.VirtualScattering;
-import dk.sdu.mmmi.featureous.remodularization.metrics.VirtualTangling;
+import dk.sdu.mmmi.featureous.metrics.concernmetrics.VirtualScattering;
+import dk.sdu.mmmi.featureous.metrics.concernmetrics.VirtualTangling;
 import dk.sdu.mmmi.featureous.remodularization.spi.RemodularizationObjectiveProvider;
 import dk.sdu.mmmi.srcUtils.sdm.metrics.PCoupImport;
 import dk.sdu.mmmi.srcUtils.sdm.metrics.SCoh;
@@ -28,7 +28,6 @@ import dk.sdu.mmmi.utils.ga.multiobj.KeyedTuple;
 import dk.sdu.mmmi.utils.mogga.MOGGA;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -36,14 +35,22 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.netbeans.api.progress.ProgressHandle;
+import org.netbeans.modules.visual.layout.DevolveWidgetLayout;
 
 /**
  *
  * @author ao
  */
 public class MainRemodularization {
+    private static Set<KeyedTuple<DecValChromosome, Double>> prevParetoFront = new HashSet<KeyedTuple<DecValChromosome, Double>>();
+
+    public static void resetPrevParetoFront() {
+        MainRemodularization.prevParetoFront = new HashSet<KeyedTuple<DecValChromosome, Double>>();
+    }
 
     private static Map<String, String> calcTypeToPkg(Map<String, String> singlTypeToFeature, StaticDependencyModel newDm) {
         Map<String, String> typeToPkg = new HashMap<String, String>();
@@ -52,7 +59,9 @@ public class MainRemodularization {
         }
         for (JPackage p : newDm.getPackages()) {
             for (JType t : p.getTopLevelTypes()) {
-                typeToPkg.put(t.getQualName(), getPkgStr(p.getQualName()));
+                if(!typeToPkg.containsKey(t.getQualName())){
+                    typeToPkg.put(t.getQualName(), getPkgStr(p.getQualName()));
+                }
             }
         }
         return typeToPkg;
@@ -73,7 +82,7 @@ public class MainRemodularization {
 
     public static StaticDependencyModel findNewModularization(StaticDependencyModel originalSdm, 
             ProgressHandle progress, Set<RemodularizationObjectiveProvider> providers, 
-            boolean factorSingle, int iterations, int population, float mutation) 
+            boolean factorSingle, AtomicInteger iterations, int population, float mutation) 
             throws IOException, Exception, ClassNotFoundException, RuntimeException {
 
         Controller c = Controller.getInstance();
@@ -82,7 +91,7 @@ public class MainRemodularization {
         checkModelsConsistency(ftms, originalSdm);
         ReportingUtils.showTypeCoverage(ftms, originalSdm);
 
-        progress.start(iterations+2);
+        progress.start(iterations.get()+2);
 
         List<String> singleFeature = new ArrayList<String>();
         List<String> multiFeature = new ArrayList<String>();
@@ -132,21 +141,34 @@ public class MainRemodularization {
         }
 
         if (providers != null && !providers.isEmpty()) {
-            RemodularizationOF of = new RemodularizationOF(toCluster, originalSdm, ftms, providers);
+            RemodularizationOF of = new RemodularizationOF(toCluster, originalSdm, ftms, providers, singleFeatTypeToFeature.keySet());
             DecValChromosome currStr = of.createChromosome(originalSdm);
 
             MOGGA ga = new MOGGA(of, population, mutation, currStr);
             // Insert some decent candidates to start with
             KeyedTuple<DecValChromosome, Double>[] cl = new KeyedTuple[1];
             cl[0] = new KeyedTuple<DecValChromosome, Double>(currStr, null);
-            ga.insertClonesIntoPopulation(cl, 5);
-
+            ga.insertClonesIntoPopulation(cl, 1 + population/50);
+            int parCl = 1 + population/50;
+            ArrayList<DecValChromosome> pars = new ArrayList<DecValChromosome>();
+            for(KeyedTuple<DecValChromosome, Double> kt : prevParetoFront){
+                pars.add(kt.getKey());
+            }
+            for(int i=0;i<parCl;i++){
+                Random r = new Random();
+                if(pars.size()>0){
+                    DecValChromosome chrcl = pars.get(r.nextInt(pars.size()));
+                    ga.insertClonesIntoPopulation(
+                            new KeyedTuple[]{new KeyedTuple<DecValChromosome, Double>(chrcl, null)}
+                            , 1);
+                }
+            }
             OutputUtil.log("MOGGA started...");
 
-            Set<KeyedTuple<DecValChromosome, Double>> paretoFront = ga.evolve(iterations, progress);
-
+            prevParetoFront = ga.evolve(iterations, progress);
+            
 //        printParetoFrontStats(paretoFront, of, originalSdm, ftms);
-            newSdm = chooseBestChromosome(paretoFront, of);
+            newSdm = chooseBestChromosome(prevParetoFront, of, of.createChromosome(originalSdm));
         } else {
             newSdm = new StaticDependencyModel();
             
@@ -162,6 +184,7 @@ public class MainRemodularization {
 
         // Create newDm
         Map<String, String> typeToPkg = calcTypeToPkg(singleFeatTypeToFeature, newSdm);
+//        Map<String, String> typeToPkg = calcTypeToPkg(new HashMap<String, String>(), newSdm);
         StaticDependencyModel finalDm = createModel(typeToPkg, originalSdm);
 
 //        TypeAssignement.straightDeepInsertTypes(finalDm, dm, notCoveredTypes);
@@ -210,42 +233,58 @@ public class MainRemodularization {
         OutputUtil.log(".");
     }
 
-    private static StaticDependencyModel chooseBestChromosome(Set<KeyedTuple<DecValChromosome, Double>> paretoFront, RemodularizationOF of) {
+    private static StaticDependencyModel chooseBestChromosome(Set<KeyedTuple<DecValChromosome, Double>> paretoFront, RemodularizationOF of, DecValChromosome org) {
         // Sort along each dimension separately, rank chromosomes
         // Choose the chromosome with lowest total rank
+        Double[] cutoffPoints = of.evaluateChromosomeFitness(org);
+        Set<KeyedTuple<DecValChromosome, Double>> toRemove = new HashSet<KeyedTuple<DecValChromosome, Double>>();
+        for(KeyedTuple<DecValChromosome, Double> p : paretoFront){
+            for(int i=0;i<cutoffPoints.length;i++){
+                if(p.getValues()[i]<cutoffPoints[i]){
+                    toRemove.add(p);
+                    break;
+                }
+            }
+        }
+        
+        paretoFront.removeAll(toRemove);
+        
         int objectiveCount = paretoFront.iterator().next().getValues().length;
-        Map<Integer, List<DecValChromosome>> ranks = new HashMap<Integer, List<DecValChromosome>>();
+        Map<Integer, Map<DecValChromosome, Double>> ranks = new HashMap<Integer, Map<DecValChromosome, Double>>();
         for (int i = 0; i < objectiveCount; i++) {
-            List<DecValChromosome> ranking = sortAlongNthObjective(paretoFront, i);
+            Map<DecValChromosome, Double> ranking = sortAlongNthObjective(paretoFront, i);
             ranks.put(i, ranking);
         }
 
-        final Map<DecValChromosome, Integer> totalRank = new HashMap<DecValChromosome, Integer>();
+        final Map<DecValChromosome, Double> combinedRank = new HashMap<DecValChromosome, Double>();
 
         for (KeyedTuple<DecValChromosome, Double> r : paretoFront) {
-            int total = 0;
+            double comb = 0;
             for (int i = 0; i < objectiveCount; i++) {
-                total += ranks.get(i).indexOf(r.getKey());
+                Double rank = ranks.get(i).get(r.getKey());
+                comb += rank*rank;
             }
-            totalRank.put(r.getKey(), total);
+            combinedRank.put(r.getKey(), comb);
         }
 
         List<DecValChromosome> ress = new ArrayList<DecValChromosome>();
-        ress.addAll(totalRank.keySet());
+        ress.addAll(combinedRank.keySet());
 
         Collections.sort(ress, new Comparator<DecValChromosome>() {
 
             @Override
             public int compare(DecValChromosome o1, DecValChromosome o2) {
-                return totalRank.get(o1).compareTo(totalRank.get(o2));
+                return combinedRank.get(o1).compareTo(combinedRank.get(o2));
             }
         });
 
+        //Need to take the minimal combined rank
         StaticDependencyModel newDm = of.createNewModelFromChromosome(ress.get(0));
+        
         return newDm;
     }
 
-    private static List<DecValChromosome> sortAlongNthObjective(Set<KeyedTuple<DecValChromosome, Double>> paretoFront, int objectiveNr) {
+    private static Map<DecValChromosome, Double> sortAlongNthObjective(Set<KeyedTuple<DecValChromosome, Double>> paretoFront, int objectiveNr) {
         final Map<DecValChromosome, Double> results = new HashMap<DecValChromosome, Double>();
         for (KeyedTuple<DecValChromosome, Double> r : paretoFront) {
             results.put(r.getKey(), r.getValues()[objectiveNr]);
@@ -260,13 +299,44 @@ public class MainRemodularization {
                 return results.get(o2).compareTo(results.get(o1));
             }
         });
-        return res;
+        
+        Map<DecValChromosome, Double> ress = new HashMap<DecValChromosome, Double>();
+        
+        int place = 0;
+        double prevVal = -123.123;
+        
+        for(DecValChromosome chr : res){
+            double r = results.get(chr);
+            if(prevVal!=r){
+                place++;
+                prevVal = r;
+            }
+            ress.put(chr, (double)place);
+        }
+        
+//        double max = results.get(res.get(0));
+//        double min = results.get(res.get(res.size()-1));
+//        
+//        if(max<min){
+//            throw new RuntimeException("Bug in min max");
+//            }
+//            
+//        for(DecValChromosome chr : results.keySet()){
+//            double norm = max-min;
+//            if(norm==0){
+//                norm =1;
+//        }
+//            ress.put(chr, 1-(Math.abs(results.get(chr)-min)/norm));
+//        }
+        
+        // Best with lowest results
+        return ress;
     }
 
     private static void printParetoFrontStats(Set<KeyedTuple<DecValChromosome, Double>> paretoFront, RemodularizationOF of, StaticDependencyModel dm, Set<TraceModel> ftms) throws RuntimeException {
         OutputUtil.log("------------Pareto front's params[Coh, Coup, Sca, Tang, pkgC]:-----------");
         for (KeyedTuple<DecValChromosome, Double> pc : paretoFront) {
-            StaticDependencyModel pDm = of.createNewModelFromChromosome(pc.getKey());
+//            StaticDependencyModel pDm = of.createNewModelFromChromosome(pc.getKey());
             Map<String, String> typeToPkg = null; //pDm
             StaticDependencyModel newDm = Util.createRefactoredModel(typeToPkg, dm);
             VirtualScattering vs = new VirtualScattering();
@@ -329,7 +399,7 @@ public class MainRemodularization {
             for (ClassModel t : ftm.getClassSet()) {
                 if (dm.getTypeByNameOrNull(t.getName()) == null) {
                     String msg = "Inconsistency between feature and static models for: "
-                            + t.getName();
+                            + t.getName() + ftm.getName();
                     OutputUtil.log(msg);
                     throw new RuntimeException(msg);
                 }
@@ -337,7 +407,7 @@ public class MainRemodularization {
         }
     }
 
-    private static boolean checkConsistency(StaticDependencyModel dm1, StaticDependencyModel dm2) {
+    public static boolean checkConsistency(StaticDependencyModel dm1, StaticDependencyModel dm2) {
 
         if (dm1.getTopLevelTypesCount() != dm2.getTopLevelTypesCount()) {
             throw new RuntimeException("Bad topLevel type count after remodularization[dm, newDm]: "

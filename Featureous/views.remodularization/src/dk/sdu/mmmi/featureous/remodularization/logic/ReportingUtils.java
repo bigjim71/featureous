@@ -9,8 +9,8 @@ import dk.sdu.mmmi.featureous.core.model.ClassModel;
 import dk.sdu.mmmi.featureous.core.model.TraceModel;
 import dk.sdu.mmmi.featureous.core.ui.OutputUtil;
 import dk.sdu.mmmi.featureous.metrics.concernmetrics.ScaTangUtil;
-import dk.sdu.mmmi.featureous.remodularization.metrics.VirtualScattering;
-import dk.sdu.mmmi.featureous.remodularization.metrics.VirtualTangling;
+import dk.sdu.mmmi.featureous.metrics.concernmetrics.VirtualScattering;
+import dk.sdu.mmmi.featureous.metrics.concernmetrics.VirtualTangling;
 import dk.sdu.mmmi.srcUtils.sdm.metrics.PCoupImport;
 import dk.sdu.mmmi.srcUtils.sdm.metrics.SCoh;
 import dk.sdu.mmmi.srcUtils.sdm.model.JPackage;
@@ -52,6 +52,7 @@ public class ReportingUtils {
         }
         OutputUtil.log("SCoupling: " + sCoup1 + " -> " + sCoup2);
         OutputUtil.log("Packages: " + dm.getPackages().size() + " -> " + newDm.getPackages().size());
+        OutputUtil.log(" --- \n");
     }
 
     public static void showTypeCoverage(Set<TraceModel> ftms, StaticDependencyModel dm) {

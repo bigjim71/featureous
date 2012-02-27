@@ -23,6 +23,7 @@ import recoder.io.PropertyNames;
 import recoder.io.SourceFileRepository;
 import recoder.java.CompilationUnit;
 import recoder.kit.Transformation;
+import recoder.kit.TwoPassTransformation;
 import recoder.service.DefaultErrorHandler;
 import recoder.service.UnresolvedBytecodeReferenceException;
 import recoder.service.UnresolvedReferenceException;
@@ -34,7 +35,7 @@ import recoder.service.UnresolvedReferenceException;
 public class AnalysisUtils {
 
     private static final String sep = System.getProperty("file.separator");
-    
+
     public static void analyzeCompiledProject(Project p, SrcAnalysis sa) throws Exception {
 
         CrossReferenceServiceConfiguration crsc = new CrossReferenceServiceConfiguration();

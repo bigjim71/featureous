@@ -11,10 +11,10 @@ import dk.sdu.mmmi.featureous.core.controller.Controller;
 import dk.sdu.mmmi.featureous.core.model.ClassModel;
 import dk.sdu.mmmi.featureous.core.model.OrderedBinaryRelation;
 import dk.sdu.mmmi.featureous.core.model.TraceModel;
-import dk.sdu.mmmi.featureous.core.ui.OutputUtil;
 import dk.sdu.mmmi.featureous.remodularization.workbench.infrastructure.RestructuringListener;
 import dk.sdu.mmmi.featureous.remodularization.workbench.infrastructure.SceneSupport;
 import dk.sdu.mmmi.featureous.remodularization.workbench.infrastructure.StringGraphScene;
+import dk.sdu.mmmi.srcUtils.sdm.model.JDependency;
 import dk.sdu.mmmi.srcUtils.sdm.model.JPackage;
 import dk.sdu.mmmi.srcUtils.sdm.model.JType;
 import dk.sdu.mmmi.srcUtils.sdm.model.StaticDependencyModel;
@@ -90,7 +90,11 @@ public class RemodularizationWorkbench extends JPanel {
         }
         addFtmPackages(firstLevelTraces, pkgToWidget, classToWidget);
         addFtmClasses(pkgToWidget, firstLevelTraces, classToWidget);
-        addFtmCalls(classToWidget, firstLevelTraces);
+        if (sdm == null) {
+            addFtmCalls(classToWidget, firstLevelTraces);
+        } else {
+            addDangerousSdmDependencies(classToWidget, sdm);
+        }
         final JComponent sceneView = scene.createView();
         this.add(new JScrollPane(sceneView), BorderLayout.CENTER);
         scene.setVisible(true);
@@ -116,10 +120,9 @@ public class RemodularizationWorkbench extends JPanel {
         scene.addRestructuringListener(listener);
     }
 
+    @Deprecated
     public Map<String, String> getCurrentClassToPkgMapNotPresentInSdm(StaticDependencyModel orgSdm) {
         Map<String, String> classToPkg = getCurrentClassToPkgMap();
-        OutputUtil.log("Pre size" + classToPkg.size());
-
         for (JPackage p : orgSdm.getPackages()) {
             for (JType t : p.getTopLevelTypes()) {
                 if (classToPkg.get(t.getQualName()).equals(p.getQualName())) {
@@ -127,8 +130,6 @@ public class RemodularizationWorkbench extends JPanel {
                 }
             }
         }
-
-        OutputUtil.log("Post size" + classToPkg.size());
 
         return classToPkg;
     }
@@ -269,12 +270,61 @@ public class RemodularizationWorkbench extends JPanel {
         }
     }
 
+    private void addDangerousSdmDependencies(Map<String, UMLClassWidget> classToWidget, StaticDependencyModel sdm) {
+        Set<String> edgeIDs = new HashSet<String>();
+        //Add inter-class call dependencies
+        for (String type : sdm.getTopLevelTypes()) {
+            JType t = sdm.getTypeByNameOrNull(type);
+            UMLClassWidget umlType = classToWidget.get(type);
+            for (JDependency dep : t.getDependencies()) {
+                JType reffed = dep.getReferencedType();
+                UMLClassWidget reffedUmlType = classToWidget.get(reffed.getQualName());
+                if (reffed.isTopLevel() && !edgeIDs.contains(getEdgeID(umlType, reffedUmlType))
+                        && isDangerousDependency(t, reffed)) {
+                    ConnectionWidget e = addClassToClassDependency(umlType, reffedUmlType, scene);
+                    edgeIDs.add(getEdgeID(umlType, reffedUmlType));
+
+                    Color red = new Color(220, 47, 40);
+                    e.setLineColor(red);
+
+                    changeInheritanceArrows(dep, e);
+                }
+            }
+        }
+    }
+
+    private boolean isDangerousDependency(JType from, JType to) {
+        AffinityProvider ap = Controller.getInstance().getAffinity();
+
+        if (Affinity.SINGLE_FEATURE.equals(ap.getClassAffinity(to.getQualName()))
+                && !Affinity.SINGLE_FEATURE.equals(ap.getClassAffinity(from.getQualName()))
+                && ap.getClassAffinity(from.getQualName()) != null) {
+            return true;
+        }
+        if (Affinity.SINGLE_FEATURE.equals(ap.getClassAffinity(to.getQualName()))
+                && Affinity.SINGLE_FEATURE.equals(ap.getClassAffinity(from.getQualName()))) {
+
+            TraceModel tmTo = Controller.getInstance().getTraceSet().getFirstLevelTracesWithClass(to.getQualName()).get(0);
+            TraceModel tmFrom = Controller.getInstance().getTraceSet().getFirstLevelTracesWithClass(from.getQualName()).get(0);
+            if (!tmTo.getName().equals(tmFrom.getName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void changeInheritanceArrows(JDependency dep, ConnectionWidget e) {
+        if (dep.getKind().equals(JDependency.Kind.TO_SUPER)) {
+            e.setStroke(new BasicStroke(0.5f));
+        }
+    }
+
     private static ConnectionWidget addClassToClassDependency(UMLClassWidget from, UMLClassWidget to, StringGraphScene scene) {
         String id = getEdgeID(from, to);
         ConnectionWidget edge = (ConnectionWidget) scene.addEdge(id);
 
-        scene.setEdgeSource(id, ((PackageWidget)from.getParentWidget()).getName());
-        scene.setEdgeTarget(id, ((PackageWidget)to.getParentWidget()).getName());
+        scene.setEdgeSource(id, ((PackageWidget) from.getParentWidget()).getName());
+        scene.setEdgeTarget(id, ((PackageWidget) to.getParentWidget()).getName());
 
         edge.setSourceAnchor(from.getAnchor());
         edge.setTargetAnchor(to.getAnchor());
@@ -292,8 +342,13 @@ public class RemodularizationWorkbench extends JPanel {
             }
         });
 
-        edge.setLineColor(Color.GRAY);
-        edge.setStroke(new BasicStroke(0.1f));
+        edge.setLineColor(new Color(115, 124, 129));
+        edge.setStroke(new BasicStroke(0.5f, // Width
+                BasicStroke.CAP_SQUARE, // End cap
+                BasicStroke.JOIN_MITER, // Join style
+                10.0f, // Miter limit
+                new float[]{5.0f, 3.0f}, // Dash pattern
+                0.0f));
         return edge;
     }
 

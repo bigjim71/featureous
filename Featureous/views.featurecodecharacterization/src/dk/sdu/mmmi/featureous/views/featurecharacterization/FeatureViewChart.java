@@ -11,10 +11,9 @@ import dk.sdu.mmmi.featureous.core.model.ClassModel;
 import dk.sdu.mmmi.featureous.core.model.SelectionChangeListener;
 import dk.sdu.mmmi.featureous.core.model.SelectionManager;
 import dk.sdu.mmmi.featureous.core.model.TraceModel;
-import dk.sdu.mmmi.featureous.core.ui.OutputUtil;
 import dk.sdu.mmmi.featureous.core.ui.UIUtils;
 import dk.sdu.mmmi.featureous.metrics.Result;
-import dk.sdu.mmmi.featureous.metrics.concernmetrics.Scattering;
+import dk.sdu.mmmi.featureous.metrics.concernmetrics.StaticScattering;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -72,7 +71,7 @@ public class FeatureViewChart implements SelectionChangeListener{
         panel = new ChartPanel(chart);
         chart.setBackgroundPaint(Color.white);
         this.ftms = ftms;
-        scattering = new ArrayList<Result>(new Scattering(pkg).calculateAndReturnAll(new HashSet<TraceModel>(ftms), null));
+        scattering = new ArrayList<Result>(new StaticScattering(pkg).calculateAndReturnAll(new HashSet<TraceModel>(ftms), null));
         Result.sortByName(scattering);
         for(Result r : scattering){
 //            OutputUtil.log(r.name + ";" +r.value);

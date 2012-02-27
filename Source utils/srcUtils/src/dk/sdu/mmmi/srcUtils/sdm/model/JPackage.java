@@ -9,6 +9,10 @@ import java.util.Collections;
 import java.util.List;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -16,9 +20,15 @@ import java.util.ArrayList;
  */
 public class JPackage implements Serializable{
     private String qualName;
-    private List<JType> types = new HashList<JType>();
+    private Map<String, JType> types = new HashMap<String, JType>();
+    private final StaticDependencyModel sdm;
+    
+    JPackage(String qualName, StaticDependencyModel sdm) {
+        this.qualName = qualName;
+        this.sdm = sdm;
+    }
 
-    JPackage(String qualName) {
+    public void setQualName(String qualName) {
         this.qualName = qualName;
     }
 
@@ -26,51 +36,49 @@ public class JPackage implements Serializable{
         return qualName;
     }
 
-    public JType getOrAddTypeByQualName(String cName){
-        String name = cName;
-        int index = types.indexOf(name);
-        if(index != -1){
-            return types.get(index);
+    public JType getOrAddTypeByQualName(String name){
+        if(types.containsKey(name)){
+            return types.get(name);
         }else{
             JType t = new JType(name);
-            types.add(t);
+            t.setPkg(this, sdm);
+            types.put(name, t);
             return t;
         }
     }
 
-    public JType getTypeByQualNameOrNull(String cName){
-        String name = cName;
-        int index = types.indexOf(name);
-        if(index != -1){
-            return types.get(index);
-        }else{
-            return null;
-        }
+    public JType getTypeByQualNameOrNull(String name){
+        return types.get(name);
     }
     
     public JType getOrAddType(JType c){
-        int index = types.indexOf(c);
-        if(index == -1){
-            types.add(c);
+        if(!types.containsKey(c.getQualName())){
+            types.put(c.getQualName(), c);
+            c.setPkg(this,sdm);
+            return c;
         }
-        return types.get(types.indexOf(c));
+        return types.get(c.getQualName());
     }
 
-    public List<JType> getAllTypes() {
-        return Collections.unmodifiableList(types);
+    public Collection<JType> getAllTypes() {
+        return types.values();
+    }
+
+    public Set<String> getAllTypeNames() {
+        return types.keySet();
     }
 
     public List<JType> getTopLevelTypes() {
         List<JType> res = new ArrayList<JType>();
-        for(JType t : types){
+        for(JType t : types.values()){
             if(t.isTopLevel()){
                 res.add(t);
             }
         }
-        return Collections.unmodifiableList(res);
+        return res;
     }
     
-    List<JType> getModifiableTypes() {
+    Map<String, JType> getModifiableTypes() {
         return types;
     }
 

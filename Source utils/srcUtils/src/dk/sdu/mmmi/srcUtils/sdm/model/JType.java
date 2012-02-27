@@ -7,7 +7,9 @@ package dk.sdu.mmmi.srcUtils.sdm.model;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -18,18 +20,49 @@ public class JType implements Serializable{
     private boolean processed = false;
     private boolean topLevel = false;
     private boolean interfaceType = false;
+    private boolean abstractType = false;
     private boolean publicAccess;
-    private List<JDependency> refTypes = new HashList<JDependency>();
-    private List<JType> enclosedTypes = new HashList<JType>();
+    private Map<StaticDependencyModel, JPackage> pkgs = new HashMap<StaticDependencyModel, JPackage>();
+    private List<JType> incomingDeps = new ArrayList<JType>();
+    private List<JDependency> refTypes = new ArrayList<JDependency>();
+    private List<JDependency> superTypes = new ArrayList<JDependency>();
+    private List<JType> enclosedTypes = new ArrayList<JType>();
     private int fieldCount;
     private int methodCount;
     private int constructorCount;
     private int estAccessorCount = 0;
+    private int loc = 0;
 
     public JType(String qualName) {
         this.qualName = qualName;
     }
 
+    public void setLoc(int loc) {
+        if(loc>0){
+            this.loc = loc;
+        }
+    }
+
+    public int getLoc() {
+        return loc;
+    }
+
+    public void setPkg(JPackage pkg, StaticDependencyModel sdm) {
+        pkgs.put(sdm, pkg);
+    }
+
+    public JPackage getPkg(StaticDependencyModel sdm) {
+        return pkgs.get(sdm);
+    }
+
+    public boolean isAbstractType() {
+        return abstractType;
+    }
+    
+    public void setAbstractType(boolean aAbstract) {
+        abstractType = aAbstract;
+    }
+    
     public boolean isInterfaceType() {
         return interfaceType;
     }
@@ -44,6 +77,14 @@ public class JType implements Serializable{
 
     public List<JDependency> getDependencies() {
         return refTypes;
+    }
+
+    public List<JType> getIncomingDeps() {
+        return incomingDeps;
+    }
+
+    public List<JDependency> getSuperDependencies() {
+        return superTypes;
     }
 
     public int getFieldCount() {
@@ -110,17 +151,14 @@ public class JType implements Serializable{
         this.enclosedTypes = enclosedTypes;
     }
     
-    public List<JDependency> getDependenciesTowards(JType t, boolean excludeAccessors){
-        List<JDependency> res = new ArrayList<JDependency>();
+    public int getDepsTowardsCount(JType t){
+        int count = 0;
         for(JDependency d : this.refTypes){
-            if(d.getReferencedType().equals(t)){
-                if(!excludeAccessors && d.isAccessor()){
-                    continue;
-                }
-                res.add(d);
+            if(d.getReferencedType().getQualName().equals(t.getQualName())){
+                count++;
             }
         }
-        return res;
+        return count;
     }
 
     @Override
@@ -128,21 +166,12 @@ public class JType implements Serializable{
         if (obj == null) {
             return false;
         }
-        if(obj instanceof JType){
-            final JType other = (JType) obj;
-            if ((this.qualName == null) ? (other.qualName != null) : !this.qualName.equals(other.qualName)) {
-                return false;
-            }
-            return true;
-        }else
-        if(obj instanceof String){
-            final String other = (String) obj;
-            if ((this.qualName == null) ? (other != null) : !this.qualName.equals(other)) {
-                return false;
-            }
+        
+        if(this==obj){
             return true;
         }
-        return false;
+        
+        return hashCode()==obj.hashCode();
     }
 
     @Override

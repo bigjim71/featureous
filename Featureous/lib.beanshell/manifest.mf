@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+OpenIDE-Module: dk.sdu.mmmi.featureous.lib.beanshell
+OpenIDE-Module-Localizing-Bundle: dk/sdu/mmmi/featureous/lib/beanshell/Bundle.properties
+OpenIDE-Module-Specification-Version: 1.0
+

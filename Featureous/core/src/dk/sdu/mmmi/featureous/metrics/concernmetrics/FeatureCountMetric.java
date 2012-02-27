@@ -5,7 +5,6 @@
  */
 package dk.sdu.mmmi.featureous.metrics.concernmetrics;
 
-import dk.sdu.mmmi.featureous.core.controller.Controller;
 import dk.sdu.mmmi.featureous.core.model.TraceModel;
 import dk.sdu.mmmi.featureous.metrics.AbstractMetric;
 import dk.sdu.mmmi.srcUtils.sdm.model.StaticDependencyModel;

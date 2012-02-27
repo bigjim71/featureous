@@ -7,7 +7,6 @@ package dk.sdu.mmmi.featureous.remodularization.logic.objectives;
 
 import dk.sdu.mmmi.featureous.core.model.TraceModel;
 import dk.sdu.mmmi.featureous.remodularization.spi.RemodularizationObjectiveProvider;
-import dk.sdu.mmmi.srcUtils.sdm.model.HashList;
 import dk.sdu.mmmi.srcUtils.sdm.model.JPackage;
 import dk.sdu.mmmi.srcUtils.sdm.model.JType;
 import dk.sdu.mmmi.srcUtils.sdm.model.StaticDependencyModel;
@@ -22,32 +21,35 @@ import java.util.Set;
  *
  * @author ao
  */
-public class RemodularizationOF implements ParetoObjectiveFunction{
+public class RemodularizationOF implements ParetoObjectiveFunction {
 
     private final StaticDependencyModel sdm;
     private final Set<TraceModel> traces;
     private final List<String> subjectTypes;
     private final List<RemodularizationObjectiveProvider> objectiveProviders;
+    private final StaticDependencyModel newSdm = new StaticDependencyModel();
+    private final Set<String> lockedTypes;
 
-    public RemodularizationOF(List<String> subjectTypes, StaticDependencyModel orgModel, Set<TraceModel> traces, Set<RemodularizationObjectiveProvider> objectiveProviders) {
+    public RemodularizationOF(List<String> subjectTypes, StaticDependencyModel orgModel, Set<TraceModel> traces, Set<RemodularizationObjectiveProvider> objectiveProviders, Set<String> lockedTypes) {
         this.sdm = orgModel;
         this.traces = traces;
         this.subjectTypes = subjectTypes;
         this.objectiveProviders = new ArrayList<RemodularizationObjectiveProvider>(objectiveProviders);
+        this.lockedTypes = lockedTypes;
     }
 
     public Double[] evaluateChromosomeFitness(DecValChromosome h) {
         StaticDependencyModel dm = createNewModelFromChromosome(h);
         Double[] res = new Double[objectiveProviders.size()];
-        for(int i = 0; i<objectiveProviders.size(); i++){
+        for (int i = 0; i < objectiveProviders.size(); i++) {
             res[i] = new Double(objectiveProviders.get(i).createObjective().calculateAndReturnRes(traces, dm));
-            if(objectiveProviders.get(i).isMinimization()){
+            if (objectiveProviders.get(i).isMinimization()) {
                 res[i] = -res[i];
             }
         }
-        
+
         return res;
-        
+
 //        Double sCoh = new SCoh().calculate(dm, null);
 //        Double sCoupAbs = 0d;
 //        for(JPackage p : dm.getPackages()){
@@ -95,11 +97,12 @@ public class RemodularizationOF implements ParetoObjectiveFunction{
     }
 
     public DecValChromosome createChromosome(StaticDependencyModel dm) {
-        DecValChromosome chr = new DecValChromosome(subjectTypes.size(), 0, dm.getPackages().size()-1);
-        for(int i = 0; i<subjectTypes.size();i++){
-            for(JPackage p : dm.getPackages()){
-                if(p.getTypeByQualNameOrNull(subjectTypes.get(i))!=null){
-                    chr.setGeneVal(i, dm.getPackages().indexOf(p));
+        ArrayList<JPackage> pkgList = new ArrayList<JPackage>(dm.getPackages());
+        DecValChromosome chr = new DecValChromosome(subjectTypes.size(), 0, dm.getPackages().size() - 1);
+        for (int i = 0; i < subjectTypes.size(); i++) {
+            for (JPackage p : pkgList) {
+                if (p.getTypeByQualNameOrNull(subjectTypes.get(i)) != null) {
+                    chr.setGeneVal(i, pkgList.indexOf(p));
                 }
             }
         }
@@ -108,22 +111,30 @@ public class RemodularizationOF implements ParetoObjectiveFunction{
     }
 
     public StaticDependencyModel createNewModelFromChromosome(DecValChromosome chr) {
-        StaticDependencyModel newDm = new StaticDependencyModel();
+        newSdm.reset();
 //        for(JPackage p : sdm.getPackages()){
 //            newDm.getOrAddPackageByName(p.getQualName());
 //        }
 
-        HashList<JType> added = new HashList<JType>();
-        for(int i = 0; i<chr.getLength(); i++){
+        ArrayList<JType> added = new ArrayList<JType>();
+        for (int i = 0; i < chr.getLength(); i++) {
             int p = chr.getGeneVal(i);
             JType type = sdm.getTypeByNameOrNull(subjectTypes.get(i));
-            if(type==null){
+            if (type == null) {
                 throw new RuntimeException("Null");
             }
-            
-            Util.deepInsertType(newDm.getOrAddPackageByName("pack"+p), type, added);
-            
+            if (!added.contains(type)) {
+                Util.deepInsertType(newSdm.getOrAddPackageByName("pack" + p), type, added);
+            }
+
 //            Util.deepInsertType(newDm.getOrAddPackageByName(sdm.getPackages().get(p).getQualName()), type, added);
+        }
+
+        for (String lt : lockedTypes) {
+            JType t = sdm.getTypeByNameOrNull(lt);
+            if (!added.contains(t)) {
+                Util.deepInsertType(newSdm.getOrAddPackageByName("locked"), t, added);
+            }
         }
 
 //        for(JPackage p : sdm.getPackages()){
@@ -135,7 +146,6 @@ public class RemodularizationOF implements ParetoObjectiveFunction{
 //            }
 //        }
 
-        return newDm;
+        return newSdm;
     }
-
 }

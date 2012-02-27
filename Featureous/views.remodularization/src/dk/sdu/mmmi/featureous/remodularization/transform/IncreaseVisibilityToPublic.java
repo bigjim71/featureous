@@ -1,13 +1,6 @@
-/*
- * Featureous is distributed under the GPLv3 license.
- *
- * University of Southern Denmark, 2011
- */
 package dk.sdu.mmmi.featureous.remodularization.transform;
 
-import dk.sdu.mmmi.featureous.core.ui.OutputUtil;
-import recoder.CrossReferenceServiceConfiguration;
-import recoder.convenience.TreeWalker;
+import recoder.convenience.ForestWalker;
 import recoder.java.Declaration;
 import recoder.java.declaration.DeclarationSpecifier;
 import recoder.java.declaration.MemberDeclaration;
@@ -15,9 +8,9 @@ import recoder.java.declaration.TypeDeclaration;
 import recoder.java.declaration.modifier.Private;
 import recoder.java.declaration.modifier.Protected;
 import recoder.java.declaration.modifier.Public;
+import recoder.kit.MiscKit;
 import recoder.kit.ProblemReport;
 import recoder.kit.TwoPassTransformation;
-import recoder.kit.UnitKit;
 import recoder.list.generic.ASTArrayList;
 import recoder.list.generic.ASTList;
 
@@ -27,43 +20,36 @@ import recoder.list.generic.ASTList;
  */
 public class IncreaseVisibilityToPublic extends TwoPassTransformation {
 
-    private final String typeName;
-    private TypeDeclaration typeDecl;
-
-    public IncreaseVisibilityToPublic(CrossReferenceServiceConfiguration crs, String typeName) {
-        super(crs);
-        this.typeName = typeName;
-    }
-
     @Override
     public ProblemReport analyze() {
-        OutputUtil.log("***** incVis: " + typeName);
-        typeDecl = (TypeDeclaration) getNameInfo().getClassType(typeName);
-
         return setProblemReport(NO_PROBLEM);
     }
 
     @Override
     public void transform() {
         super.transform();
-
         ASTList<Declaration> mds = new ASTArrayList<Declaration>();
-        TreeWalker w = new TreeWalker(UnitKit.getCompilationUnit(typeDecl));
+        ForestWalker w = new ForestWalker(getSourceFileRepository().getCompilationUnits());
         while (w.next()) {
-            if (w.getProgramElement() instanceof MemberDeclaration) {
-                mds.add((Declaration)w.getProgramElement());
-            }else if (w.getProgramElement() instanceof TypeDeclaration) {
-                mds.add((Declaration)w.getProgramElement());
+            if (w.getProgramElement() instanceof TypeDeclaration) {
+                TypeDeclaration td = (TypeDeclaration) w.getProgramElement();
+                if (VisibilityModificationUtils.canIncreaseTypeVisibility(td, getSourceFileRepository())) {
+                    mds.add(td);
+                }
+            } else if (w.getProgramElement() instanceof MemberDeclaration) {
+                MemberDeclaration md = (MemberDeclaration) w.getProgramElement();
+                if (VisibilityModificationUtils.canIncreaseMemberVisibility(md)) {
+                    mds.add(md);
+                }
             }
         }
         for (Declaration md : mds) {
-//                    typeDecl.getProgramModelInfo().isVisibleFor((Member) md, typeDecl);
             ASTList<DeclarationSpecifier> dss = md.getDeclarationSpecifiers();
-            if(dss==null){
-                dss = new ASTArrayList<DeclarationSpecifier>();
-            }
             ASTList<DeclarationSpecifier> toRemove = new ASTArrayList<DeclarationSpecifier>();
             boolean add = true;
+            if (dss == null) {
+                dss = new ASTArrayList<DeclarationSpecifier>();
+            }
             for (DeclarationSpecifier ds : dss) {
                 if (ds instanceof Private
                         || ds instanceof Protected) {
@@ -73,10 +59,24 @@ public class IncreaseVisibilityToPublic extends TwoPassTransformation {
                     add = false;
                 }
             }
-            dss.removeAll(toRemove);
+
+            
             if (add) {
-                dss.add(new Public());
+                DeclarationSpecifier ds = getProgramFactory().createPublic();
+                MiscKit.unindent(ds);
+                MiscKit.unindent(md);
+                dss.add(0, ds);
+                ds.setParent(md);
+                MiscKit.unindent(md);
+//                    getChangeHistory().attached(md);
             }
+
+            for (DeclarationSpecifier ds : toRemove) {
+                MiscKit.unindent(ds);
+                dss.remove(ds);
+//                    MiscKit.remove(getChangeHistory(), ds);
+            }
+
             md.setDeclarationSpecifiers(dss);
         }
     }

@@ -31,7 +31,7 @@ public class PCoupImport implements Measure{
         
         for(JType t : p.getAllTypes()){
             for(JDependency d : t.getDependencies()){
-                if(!p.getAllTypes().contains(d.getReferencedType())){
+                if(!p.getAllTypeNames().contains(d.getReferencedType().getQualName())){
                     res++;
                 }
             }

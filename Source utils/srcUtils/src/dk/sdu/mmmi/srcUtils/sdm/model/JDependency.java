@@ -13,13 +13,23 @@ import java.io.Serializable;
  */
 public class JDependency implements Serializable{
 
+    public static enum Kind{
+        GENERAL, TO_SUPER
+    }
+    
     private JType referencedType;
     private boolean accessor = false;
+    private final Kind kind;
 
-    public JDependency(JType referencedType) {
+    public JDependency(JType referencedType, Kind kind) {
+        this.kind = kind;
         this.referencedType = referencedType;
     }
 
+    public Kind getKind() {
+        return kind;
+    }
+    
     public void setAccessor(boolean accessor) {
         this.accessor = accessor;
     }

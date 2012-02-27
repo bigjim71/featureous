@@ -7,8 +7,10 @@ package dk.sdu.mmmi.srcUtils.sdm;
 
 import dk.sdu.mmmi.srcUtils.nb.NBJavaSrcUtils;
 import dk.sdu.mmmi.srcUtils.sdm.model.JDependency;
+import dk.sdu.mmmi.srcUtils.sdm.model.JDependency.Kind;
 import dk.sdu.mmmi.srcUtils.sdm.model.JType;
 import dk.sdu.mmmi.srcUtils.sdm.model.StaticDependencyModel;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -67,7 +69,7 @@ public class RecoderModelExtractor {
                     progressHandle.start();
                     progressHandle.switchToIndeterminate();
                     try {
-                        StaticDependencyModel sdm = extractDependencyModel(NBJavaSrcUtils.getSrcDirs(mainProj)[0], progressHandle);
+                        StaticDependencyModel sdm = extractDependencyModel(NBJavaSrcUtils.getSrcDirs(mainProj)[0].replace("\\", File.separator).replace("/", File.separator), progressHandle);
                         if (sdm != null) {
                             sdm.cleanup();
                         }
@@ -171,12 +173,19 @@ public class RecoderModelExtractor {
                                 pkgName = cc.getPackage().getName();
                             }
                             JType dmRefType = model.getOrAddPackageByName(pkgName).getOrAddTypeByQualName(typeName);
-                            JDependency dmDep = new JDependency(dmRefType);
+                            Kind k = Kind.GENERAL;
+                            if(ct.getSupertypes().contains(cc)){
+                                k = Kind.TO_SUPER;
+                            }
+                            JDependency dmDep = new JDependency(dmRefType, k);
                             dmType.getDependencies().add(dmDep);
+                            dmRefType.getIncomingDeps().add(dmType);
                         }
                     }
                 }
                 dmType.setInterfaceType(ct.isInterface());
+                dmType.setAbstractType(ct.isAbstract());
+                dmType.setLoc(ct.getEndPosition().getLine() - ct.getIdentifier().getStartPosition().getLine());
 
                 //TODO handle invocations at some point
 //                w = new TreeWalker(ct);

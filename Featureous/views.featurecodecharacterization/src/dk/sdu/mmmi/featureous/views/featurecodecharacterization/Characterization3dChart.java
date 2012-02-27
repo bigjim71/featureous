@@ -13,8 +13,8 @@ import dk.sdu.mmmi.featureous.core.model.TraceModel;
 import dk.sdu.mmmi.featureous.core.model.TraceSet;
 import dk.sdu.mmmi.featureous.explorer.api.GranularityChooserMenu;
 import dk.sdu.mmmi.featureous.metrics.Result;
-import dk.sdu.mmmi.featureous.metrics.concernmetrics.Scattering;
-import dk.sdu.mmmi.featureous.metrics.concernmetrics.Tangling;
+import dk.sdu.mmmi.featureous.metrics.concernmetrics.StaticScattering;
+import dk.sdu.mmmi.featureous.metrics.concernmetrics.StaticTangling;
 import dk.sdu.mmmi.featureous.views.featurecodecharacterization.barchart3d.customized.PNGKeyboardSaver;
 import dk.sdu.mmmi.featureous.views.featurecodecharacterization.barchart3d.customized.LabeledMouseSelector;
 import dk.sdu.mmmi.featureous.views.featurecodecharacterization.barchart3d.customized.CustomMouseControl;
@@ -75,9 +75,9 @@ public class Characterization3dChart implements SelectionChangeListener {
 
 
         boolean pkgGran = gc.getValue() == GranularityChooserMenu.PACKAGE_GRANULARITY;
-        sr = new ArrayList<Result>(new Scattering(pkgGran).calculateAndReturnAll(ts.getFirstLevelTraces(), null));
+        sr = new ArrayList<Result>(new StaticScattering(pkgGran).calculateAndReturnAll(ts.getFirstLevelTraces(), null));
         Result.sortByName(sr);
-        tr = new ArrayList<Result>(new Tangling(pkgGran).calculateAndReturnAll(ts.getFirstLevelTraces(), null));
+        tr = new ArrayList<Result>(new StaticTangling(pkgGran).calculateAndReturnAll(ts.getFirstLevelTraces(), null));
         Result.sortByName(tr);
 
         Collections.sort(sr);

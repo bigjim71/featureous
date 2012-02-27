@@ -14,18 +14,17 @@ import dk.sdu.mmmi.srcUtils.sdm.model.StaticDependencyModel;
  * @author ao
  */
 
-@Deprecated
 public class PCoupExport implements Measure{
 
     public Double calculate(StaticDependencyModel dm, JPackage p) {
         double res = 0;
         for(JPackage pp : dm.getPackages()){
-            if(pp.equals(p)){
+            if(pp.getQualName().equals(p.getQualName())){
                 continue;
             }
             for(JType t : pp.getAllTypes()){
                 for(JType tp : p.getAllTypes()){
-                    res += t.getDependenciesTowards(tp, false).size();
+                    res += t.getDepsTowardsCount(tp);
                 }
             }
         }

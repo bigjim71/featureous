@@ -27,8 +27,7 @@ public class ProjectAnnotator implements ProjectIconAnnotator {
     public @Override
     Image annotateIcon(Project p, Image orig, boolean openedNode) {
         String srcDir = NBJavaSrcUtils.getSrcDirs(p)[0];
-        File aopXml = new File(srcDir + System.getProperty("file.separator") + "META-INF"
-                + System.getProperty("file.separator") + "aop.xml");
+        File aopXml = new File(p.getProjectDirectory().getPath() + System.getProperty("file.separator") + "dk.sdu.mmmi.featuretracer.xml");
         if (aopXml.isFile()) {
             return ImageUtilities.mergeImages(ImageUtilities.addToolTipToImage(orig, "Featureous-enabled project"),
                     ImageUtilities.loadImage("dk/sdu/mmmi/featureous/core/ui/featureous_badge.png"), 16, 0);

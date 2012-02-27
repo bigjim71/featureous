@@ -3,30 +3,33 @@
  *
  * University of Southern Denmark, 2011
  */
-package dk.sdu.mmmi.featureous.remodularization.metrics;
+package dk.sdu.mmmi.featureous.remodularization.logic.objectives;
 
 import dk.sdu.mmmi.featureous.metrics.AbstractMetric;
+import dk.sdu.mmmi.featureous.metrics.concernmetrics.PkgCountMetric;
 import dk.sdu.mmmi.featureous.remodularization.spi.RemodularizationObjectiveProvider;
+import org.openide.util.lookup.ServiceProvider;
 
 /**
  *
  * @author ao
  */
-public class VirtualScatteringObjective implements RemodularizationObjectiveProvider{
+@ServiceProvider(service=RemodularizationObjectiveProvider.class)
+public class PkgCountObjective implements RemodularizationObjectiveProvider{
 
     @Override
     public String getObjectiveName() {
-        return "Scattering of features over packages";
+        return "[Other] Pkg count";
     }
 
     @Override
     public AbstractMetric createObjective() {
-        return new VirtualScattering();
+        return new PkgCountMetric();
     }
 
     @Override
     public boolean isMinimization() {
-        return true;
+        return false;
     }
     
 }

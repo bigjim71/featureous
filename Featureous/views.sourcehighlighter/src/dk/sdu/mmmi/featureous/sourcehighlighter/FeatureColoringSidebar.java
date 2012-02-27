@@ -5,23 +5,15 @@
  */
 package dk.sdu.mmmi.featureous.sourcehighlighter;
 
-import com.sun.source.tree.CompilationUnitTree;
-import com.sun.source.util.Trees;
 import dk.sdu.mmmi.featureous.core.controller.Controller;
 import dk.sdu.mmmi.featureous.core.model.SelectionChangeListener;
 import dk.sdu.mmmi.featureous.core.model.SelectionManager;
 import dk.sdu.mmmi.featureous.core.model.TraceListChangeListener;
 import dk.sdu.mmmi.featureous.core.model.TraceSet;
-import dk.sdu.mmmi.featureous.core.ui.OutputUtil;
 import dk.sdu.mmmi.featureous.sourcehighlighter.api.FeatureCategoryMarker;
 import dk.sdu.mmmi.featureous.sourcehighlighter.api.LineInfoTag;
-import dk.sdu.mmmi.featureous.sourcehighlighter.api.MethodPositionVisitor;
 import dk.sdu.mmmi.srcUtils.AnalysisUtils;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Point;
-import java.awt.Rectangle;
+import java.awt.*;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
@@ -47,9 +39,6 @@ import org.netbeans.api.editor.fold.Fold;
 import org.netbeans.api.editor.fold.FoldHierarchy;
 import org.netbeans.api.editor.fold.FoldHierarchyEvent;
 import org.netbeans.api.editor.fold.FoldHierarchyListener;
-import org.netbeans.api.java.source.CancellableTask;
-import org.netbeans.api.java.source.CompilationController;
-import org.netbeans.api.java.source.JavaSource;
 import org.netbeans.editor.BaseTextUI;
 import org.netbeans.editor.Utilities;
 import org.openide.util.Exceptions;
@@ -81,7 +70,6 @@ public class FeatureColoringSidebar extends TopComponent {
     @Override
     public void addNotify() {
         super.addNotify();
-        //Adding a bunch of document listeners
         Utilities.getDocument(target).addDocumentListener(dl);//PostModificationDocumentListener(dl);
         FoldHierarchy fh = FoldHierarchy.get(target);
         fh.addFoldHierarchyListener(fhl);
@@ -180,57 +168,6 @@ public class FeatureColoringSidebar extends TopComponent {
         }
     }
 
-    @Deprecated
-    public class ColoringTask implements CancellableTask<CompilationController> {
-
-        public void run(CompilationController p) throws Exception {
-
-
-            p.toPhase(JavaSource.Phase.PARSED);
-            CompilationUnitTree cuTree = p.getCompilationUnit();
-//            SourcePositions sp = p.getTrees().getSourcePositions();
-//            for (Tree tr : cuTree.getTypeDecls()) {
-//                TypeElement te = (TypeElement) p.getTrees().getElement(p.getTrees().getPath(cuTree, tr));
-//                if (te != null) {
-//                    long tstart = sp.getStartPosition(cuTree, p.getTrees().getTree(te));
-//                    markersTmp.add(new FeatureCategoryMarker(
-//                            cuTree.getLineMap().getLineNumber(tstart),
-//                            cuTree.getLineMap().getLineNumber(tstart) + 1, fts, Color.PINK));
-//                    for (Element el : te.getEnclosedElements()) {
-//                        if (el.getKind().equals(ElementKind.METHOD)
-//                                || el.getKind().equals(ElementKind.CONSTRUCTOR)) {
-//                            long start = sp.getStartPosition(cuTree, p.getTrees().getTree(el));
-//                            long end = sp.getEndPosition(cuTree, p.getTrees().getTree(el));
-//                            if (start <= end) {
-//                                markersTmp.add(new FeatureCategoryMarker(
-//                                        cuTree.getLineMap().getLineNumber(start),
-//                                        cuTree.getLineMap().getLineNumber(end),
-//                                        fts, Color.cyan));
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-
-            Trees trees = p.getTrees();
-            MethodPositionVisitor posVis = new MethodPositionVisitor(trees.getSourcePositions(),
-                    target);
-
-            posVis.scan(cuTree, null);
-            markers.clear();
-//                markers.addAll(markersTmp);
-            markers.addAll(posVis.getMarkers());
-
-
-            repaint();
-        }
-
-        @Override
-        public void cancel() {
-            OutputUtil.log("Feature sidebar scan cancelled");
-        }
-    }
-
     @Override
     public String getToolTipText(MouseEvent event) {
         List<String> feats = getFeatsMarksAt(event);
@@ -240,7 +177,15 @@ public class FeatureColoringSidebar extends TopComponent {
             msg.append("<br>- ");
             msg.append(s);
         }
-        return (feats.size() > 0) ? msg.toString() : null;
+        if(feats.size() > 0){
+            return msg.toString();
+        }else{
+            if(markers.size()>0){
+                return "<html>[no features] <br><br> Scroll with mouse to adjust this sidebar</html>";
+            }else{
+                return null;
+            }
+        }
     }
 
     private int getLineFromMouseEvent(MouseEvent e) {
@@ -271,8 +216,8 @@ public class FeatureColoringSidebar extends TopComponent {
                 for (int i = 0; i < root.getFoldCount(); i++) {
                     Fold curr = root.getFold(i);
                     if (curr.isCollapsed()) {
-                        int endLine = MethodPositionVisitor.getRawLineNumber(document, curr.getEndOffset());
-                        int startLine = MethodPositionVisitor.getRawLineNumber(document, curr.getStartOffset());
+                        int endLine = FeatureBarExtractor.getRawLineNumber(document, curr.getEndOffset());
+                        int startLine = FeatureBarExtractor.getRawLineNumber(document, curr.getStartOffset());
                         if (endLine < line) {
                             minusRows += endLine - startLine;
                         } else if (startLine <= line && endLine >= line) {

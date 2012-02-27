@@ -18,7 +18,7 @@ import org.netbeans.editor.Utilities;
  * @author ao
  */
 public class FeatureCategoryMarker {
-    public static double EDITOR_LINE_HEIGHT_MULTIPLIER_FIX = 0.929;//0.945;
+    public static double EDITOR_LINE_HEIGHT_MULTIPLIER_FIX = 1.21;
 
     private final String method;
     private final long startLine;
@@ -65,15 +65,16 @@ public class FeatureCategoryMarker {
             }
         }
 
+        int line = Utilities.getEditorUI(target).getLineAscent();
         if (selected) {
             g.setColor(new Color(0, 0, 0));
-            g.fillRoundRect(1, -2 + (int) ((startLine-1) * Utilities.getEditorUI(target).getLineHeight()*EDITOR_LINE_HEIGHT_MULTIPLIER_FIX),
-                    9, 2 + 2 + (int) ((endLine - startLine+1) * Utilities.getEditorUI(target).getLineHeight()*EDITOR_LINE_HEIGHT_MULTIPLIER_FIX),
+            g.fillRoundRect(1, -2 + (int) ((startLine-1) * line *EDITOR_LINE_HEIGHT_MULTIPLIER_FIX),
+                    9, 2 + 2 + (int) ((endLine - startLine+1) * line *EDITOR_LINE_HEIGHT_MULTIPLIER_FIX) ,
                     2, 2);
         }
         g.setColor(color);
-        g.fillRoundRect(3, (int) ((startLine - 1) * Utilities.getEditorUI(target).getLineHeight()*EDITOR_LINE_HEIGHT_MULTIPLIER_FIX),
-                5, (int) ((endLine - startLine + 1) * Utilities.getEditorUI(target).getLineHeight()*EDITOR_LINE_HEIGHT_MULTIPLIER_FIX),
+        g.fillRoundRect(3, (int) ((startLine - 1) * line * EDITOR_LINE_HEIGHT_MULTIPLIER_FIX),
+                5, (int) ((endLine - startLine + 1) * line * EDITOR_LINE_HEIGHT_MULTIPLIER_FIX),
                 2, 2);
     }
 }

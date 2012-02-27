@@ -82,17 +82,20 @@ public class MOGGA extends ParetoGA{
         // find module for an orphan, split biggest module, join two smallest modules
         //Group->numclasses count
         for (KeyedTuple<DecValChromosome, Double> chr : population) {
-            if(Randomizer.nextDouble()<probability){
+            if(Randomizer.nextFloat()<probability){
                 
                 Map<Integer, Integer> groupToSize = getGroupSizes(chr.getKey());
-                if(adoptOrphan(groupToSize, chr.getKey())){
-                    continue;
-                }else{
-                    if(Randomizer.nextFloat()<0.5f){
+                int choice = Randomizer.nextInt(3);
+                switch(choice){
+                    case 0 : 
+                        adoptOrphan(groupToSize, chr.getKey());
+                        break;
+                    case 1 :
                         joinTwoSmallest(groupToSize, chr.getKey());
-                    }else{
+                        break;
+                    case 2 :
                         splitBiggest(groupToSize, chr.getKey());
-                    }
+                        break;
                 }
             }
         }
@@ -116,14 +119,14 @@ public class MOGGA extends ParetoGA{
             return false;
         }
         
-        Integer orphan = null;
+        int orphan = -1;
         for(Map.Entry<Integer, Integer> e : groupToSize.entrySet()){
             if(e.getValue()==1){
                 orphan = e.getKey();
                 break;
             }
         }
-        if(orphan!=null){
+        if(orphan!=-1){
             for(int i = 0; i<chr.getLength();i++){
                 if(chr.getGeneVal(i)==orphan){
                     int newGroup = chr.getGeneVal(Randomizer.nextInt(chr.getLength()));
@@ -143,8 +146,8 @@ public class MOGGA extends ParetoGA{
             return;
         }
         Collections.sort(l);
-        Integer smallestG1 = null;
-        Integer smallestG2 = null;
+        int smallestG1 = -1;
+        int smallestG2 = -1;
         for(Map.Entry<Integer, Integer> e : groupToSize.entrySet()){
             if(e.getValue()==l.get(0)){
                 smallestG1 = e.getKey();
@@ -169,7 +172,14 @@ public class MOGGA extends ParetoGA{
     private void splitBiggest(Map<Integer, Integer> groupToSize, DecValChromosome key) {
         List<Integer> l = new LinkedList<Integer>(groupToSize.values());
         Collections.sort(l);
-        Integer biggestG = l.get(l.size()-1);
+        int biggestGVal = l.get(l.size()-1);
+        int biggestG = -1;
+        for(Map.Entry<Integer, Integer> e : groupToSize.entrySet()){
+            if(biggestGVal==e.getValue()){
+                biggestG = e.getKey();
+                break;
+            }
+        }
         int newID = getFirstEmptyGroupID(groupToSize.keySet());
         
         for(int i = 0; i<key.getLength(); i++){

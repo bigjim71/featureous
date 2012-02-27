@@ -125,8 +125,8 @@ public class MoveClassNB {
                         OutputUtil.log("Fixing imports");
                         for (DataObject dao : daos) {
                             FileObject fo = dao.getPrimaryFile();
-                            JavaFixAllImports.getDefault().fixAllImports(fo);
-                            JavaFixAllImports.getDefault().fixAllImports(fo);
+//                            JavaFixAllImports.getDefault().fixAllImports(fo);
+//                            JavaFixAllImports.getDefault().fixAllImports(fo);
                             OutputUtil.log("Fixing imports for: " + fo.getPath());
                         }
 

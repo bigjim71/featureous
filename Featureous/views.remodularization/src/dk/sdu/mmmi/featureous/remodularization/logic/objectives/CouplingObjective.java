@@ -19,7 +19,7 @@ public class CouplingObjective implements RemodularizationObjectiveProvider{
 
     @Override
     public String getObjectiveName() {
-        return "Inter-package coupling";
+        return "[Metric] Inter-package coupling (Min)";
     }
 
     @Override

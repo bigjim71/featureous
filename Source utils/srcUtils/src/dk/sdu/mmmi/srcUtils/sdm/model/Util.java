@@ -5,6 +5,7 @@
  */
 package dk.sdu.mmmi.srcUtils.sdm.model;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -20,22 +21,31 @@ import java.util.Set;
     }
 
     public static JPackage getTypesPackage(String typeQualName, StaticDependencyModel dm){
-        for(JPackage p : dm.getPackages()){
-            for(JType tt : p.getAllTypes()){
-                if(tt.getQualName().equals(typeQualName)){
-                    return p;
-                }
-            }
+        
+        JType tt = dm.getTypeByNameOrNull(typeQualName);
+        if(tt==null){
+            return null;
         }
+        
+//        for(JPackage p : dm.getPackages()){
+//            for(JType tt : p.getAllTypes()){
+//                if(tt.getQualName().equals(typeQualName)){
+//                    if(p!=pkg){
+//                        throw new RuntimeException("BUGGY BUG");
+//                    }
+//                    return p;
+//                }
+//            }
+//        }
 
-        return null;
+        return tt.getPkg(dm);
     }
 
     public static List<JType> deepInsertType(JPackage pack, JType type) {
-        return deepInsertType(pack, type, new HashList<JType>());
+        return deepInsertType(pack, type, new ArrayList<JType>());
     }
 
-    public static List<JType> deepInsertType( JPackage pack, JType type, HashList<JType> added) {
+    public static List<JType> deepInsertType( JPackage pack, JType type, ArrayList<JType> added) {
         pack.getOrAddType(type);
         added.add(type);
 
@@ -90,7 +100,7 @@ import java.util.Set;
         int res = 0;
         for (JType tt : p.getAllTypes()) {
             if (!tt.getQualName().equals(t.getQualName())) {
-                res += tt.getDependenciesTowards(t, false).size();
+                res += tt.getDepsTowardsCount(t);
             }
         }
         return res;

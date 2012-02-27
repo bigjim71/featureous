@@ -8,8 +8,10 @@ package dk.sdu.mmmi.featureous.core.model;
 import dk.sdu.mmmi.featuretracer.lib.featureLocation.model.FeatureTraceModel;
 import dk.sdu.mmmi.featureous.core.affinity.AffinityProvider;
 import dk.sdu.mmmi.featureous.core.controller.Controller;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 public class TraceSet {
@@ -147,6 +149,16 @@ public class TraceSet {
 
             return traces;
         }
+    }
+    
+    public List<TraceModel> getFirstLevelTracesWithClass(String clazz){
+        List<TraceModel> results = new ArrayList<TraceModel>();
+        for(TraceModel tm : getFirstLevelTraces()){
+            if(tm.getClass(clazz)!=null){
+                results.add(tm);
+            }
+        }
+        return results;
     }
 
     public Set<TraceModel> getAllTraces() {

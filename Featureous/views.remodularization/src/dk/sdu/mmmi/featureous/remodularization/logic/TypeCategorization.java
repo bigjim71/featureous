@@ -59,7 +59,7 @@ public class TypeCategorization {
                 for(ClassModel t : ftm.getClassSet()){
                     JType dt = dm.getTypeByNameOrNull(t.getName());
                     if(dt!=null){
-                        int deps = dt.getDependenciesTowards(nt, false).size();
+                        int deps = dt.getDepsTowardsCount(nt);
                         featToRefs.put(ftm.getName(), featToRefs.get(ftm.getName()) + deps);
                     }
                 }

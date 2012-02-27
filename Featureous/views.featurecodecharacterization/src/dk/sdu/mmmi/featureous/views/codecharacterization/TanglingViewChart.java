@@ -13,7 +13,7 @@ import dk.sdu.mmmi.featureous.core.model.TraceModel;
 import dk.sdu.mmmi.featureous.core.ui.OutputUtil;
 import dk.sdu.mmmi.featureous.core.ui.UIUtils;
 import dk.sdu.mmmi.featureous.metrics.Result;
-import dk.sdu.mmmi.featureous.metrics.concernmetrics.Tangling;
+import dk.sdu.mmmi.featureous.metrics.concernmetrics.StaticTangling;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -153,7 +153,7 @@ public class TanglingViewChart implements SelectionChangeListener{
         Controller c = Controller.getInstance();
         Set<TraceModel> traces = c.getTraceSet().getFirstLevelTraces();
 
-        List<Result> ress = new ArrayList<Result>(new Tangling(pkg).calculateAndReturnAll(traces, null));
+        List<Result> ress = new ArrayList<Result>(new StaticTangling(pkg).calculateAndReturnAll(traces, null));
 
         for(Result r : ress){
 //            OutputUtil.log(r.name + ";" +r.value);

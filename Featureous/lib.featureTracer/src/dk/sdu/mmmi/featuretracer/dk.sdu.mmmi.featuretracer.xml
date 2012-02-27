@@ -1,0 +1,51 @@
+
+<!-- TODO: replace all "/dk\.sdu\.mmmi\.featuretracer\.test\..*/" with your root package -->
+<!-- e.g. "/org\.mycompany\.myproject\..*/" -->
+
+<btrace-probes namespace="dk.sdu.mmmi.featuretracer">
+
+    <probe name="activate-feature">
+        <map>
+            <clazz>/dk\.sdu\.mmmi\.featuretracer\.test\..*/</clazz>
+            <method>@dk.sdu.mmmi.featuretracer.lib.FeatureEntryPoint</method>
+        </map>
+    </probe>
+
+    <probe name="deactivate-feature">
+        <map>
+            <clazz>/dk\.sdu\.mmmi\.featuretracer\.test\..*/</clazz>
+            <method>@dk.sdu.mmmi.featuretracer.lib.FeatureEntryPoint</method>
+            <location>
+                <value>RETURN</value>
+            </location>
+        </map>
+    </probe>
+    
+    <probe name="entry-exec">
+        <map>
+            <clazz>/dk\.sdu\.mmmi\.featuretracer\.test\..*/</clazz>
+            <method>/.*/</method>
+            <location>
+                <value>ENTRY</value>
+            </location>
+        </map>
+    </probe>
+
+    <probe name="return-exec">
+        <map>
+            <clazz>/dk\.sdu\.mmmi\.featuretracer\.test\..*/</clazz>
+            <method>/.*/</method>
+            <location>
+                <value>RETURN</value>
+            </location>
+        </map>
+        <map>
+            <clazz>/dk\.sdu\.mmmi\.featuretracer\.test\..*/</clazz>
+            <method>/.*/</method>
+            <location>
+                <value>THROW</value>
+            </location>
+        </map>
+    </probe>
+
+</btrace-probes>

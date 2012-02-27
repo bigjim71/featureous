@@ -23,18 +23,23 @@ public class PCoh implements Measure{
         double l=0, m=0;
         for (JType t1 : p.getAllTypes()) {
             for (JType t2 : p.getAllTypes()) {
-                if(t1.equals(t2)){
+                if(t1==t2){
                     continue;
                 }
-                l += t1.getDependenciesTowards(t2, false).size();
-                m += t1.getFieldCount() + 
-                        (t1.getMethodCount() - t1.getEstAccessorCount()) + 
-                        t1.getConstructorCount() + 1;
+                l += (t2.getIncomingDeps().contains(t1))?1:0;
+                m += 1;
+//                l += t1.getDepsTowardsCount(t2);
+//                m += t1.getFieldCount() + 
+//                        (t1.getMethodCount() - t1.getEstAccessorCount()) + 
+//                        t1.getConstructorCount() + 1;
             }
         }
 //        System.out.println(l+"/"+m);
 
         if(m==0){
+            return null;
+        }
+        if(m==1){
             return null;
         }
         return l/m;

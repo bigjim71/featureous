@@ -8,10 +8,10 @@ package dk.sdu.mmmi.featureous.sourcefolding;
 import dk.sdu.mmmi.featureous.core.controller.Controller;
 import dk.sdu.mmmi.featureous.core.model.SelectionChangeListener;
 import dk.sdu.mmmi.featureous.core.model.SelectionManager;
+import dk.sdu.mmmi.featureous.sourcehighlighter.FeatureBarExtractor;
 import dk.sdu.mmmi.featureous.sourcehighlighter.FeatureColoringSidebar;
 import dk.sdu.mmmi.featureous.sourcehighlighter.FeatureColoringSidebarFactory;
 import dk.sdu.mmmi.featureous.sourcehighlighter.api.FeatureCategoryMarker;
-import dk.sdu.mmmi.featureous.sourcehighlighter.api.MethodPositionVisitor;
 import java.awt.Dimension;
 import java.io.IOException;
 import java.util.HashSet;
@@ -70,8 +70,8 @@ public class FeatureFoldingSidebar extends TopComponent {
                     FeatureColoringSidebar csb = FeatureColoringSidebarFactory.getMapping().get(target);
                     for (FeatureCategoryMarker fcm : csb.getMarkers()) {
                         try {
-                            int foldS = MethodPositionVisitor.getFoldedLineNumber(target, curr.getStartOffset());
-                            int foldE = MethodPositionVisitor.getFoldedLineNumber(target, curr.getEndOffset());
+                            int foldS = FeatureBarExtractor.getFoldedLineNumber(target, curr.getStartOffset());
+                            int foldE = FeatureBarExtractor.getFoldedLineNumber(target, curr.getEndOffset());
                             int colS = (int) fcm.getStartLine();
                             int colE = (int) fcm.getEndLine();
                             if (colS <= foldS && colE >= foldE) {

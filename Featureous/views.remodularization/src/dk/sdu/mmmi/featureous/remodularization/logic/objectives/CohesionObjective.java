@@ -19,7 +19,7 @@ public class CohesionObjective implements RemodularizationObjectiveProvider{
 
     @Override
     public String getObjectiveName() {
-        return "Package cohesion";
+        return "[Metric] Package cohesion (Max)";
     }
 
     @Override

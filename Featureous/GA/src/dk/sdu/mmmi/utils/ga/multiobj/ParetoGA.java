@@ -9,12 +9,14 @@ import dk.sdu.mmmi.utils.ga.DecValChromosome;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.netbeans.api.progress.ProgressHandle;
 
 public class ParetoGA {
@@ -26,9 +28,11 @@ public class ParetoGA {
     protected Set<KeyedTuple<DecValChromosome, Double>> paretoFront =
             new HashSet<KeyedTuple<DecValChromosome, Double>>();
     protected ParetoObjectiveFunction of;
+    private KeyedTuple<DecValChromosome, Double> proto;
 
     public ParetoGA(ParetoObjectiveFunction f, int populationCount, double mutationProb, DecValChromosome prototype) {
         this.of = f;
+        proto = new KeyedTuple<DecValChromosome, Double>(prototype, of.evaluateChromosomeFitness(prototype));
         this.mutationPercent = mutationProb;
         createNewPopulation(populationCount, prototype);
     }
@@ -76,40 +80,32 @@ public class ParetoGA {
                 new HashSet<KeyedTuple<DecValChromosome, Double>>();
         for (Entry<KeyedTuple<DecValChromosome, Double>, Integer> e : dominance.entrySet()) {
             if (e.getValue() == 0) {
-                boolean add = true;
-                for (KeyedTuple<DecValChromosome, Double> pfe : paretoFront) {
-                    if (e.getKey().isBelowOrEqual(pfe)) {
-                        add = false;
-                        break;
-                    }
-                }
-                if (add) {
-                    toAdd.add(e.getKey());
-                }
+                toAdd.add(e.getKey());
             }
         }
+        Map<KeyedTuple<DecValChromosome, Double>, Integer> newDom = 
+                new HashMap<KeyedTuple<DecValChromosome, Double>, Integer>();
+        
+        for(KeyedTuple<DecValChromosome, Double> p : population){
+            newDom.put(p, dominance.get(p));
+        }
+        
+        dominance.clear();
+        dominance.putAll(newDom);
+        
+        paretoFront.clear();
+        
         paretoFront.addAll(toAdd);
 
-        Set<KeyedTuple<DecValChromosome, Double>> toRemove =
-                new HashSet<KeyedTuple<DecValChromosome, Double>>();
-        for (KeyedTuple<DecValChromosome, Double> pfe : paretoFront) {
-            for (KeyedTuple<DecValChromosome, Double> pfe2 : paretoFront) {
-                if (pfe.isBelow(pfe2)) {
-                    toRemove.add(pfe);
-                    break;
-                }
-            }
-        }
-        paretoFront.removeAll(toRemove);
     }
 
-    public final Set<KeyedTuple<DecValChromosome, Double>> evolve(int stopOnEra, ProgressHandle progress) {
+    public final Set<KeyedTuple<DecValChromosome, Double>> evolve(AtomicInteger stopOnEra, ProgressHandle progress) {
 
         if (era > 0) {
             throw new RuntimeException("Evolution already ran for this population.");
         }
 
-        for (int i = 0; i < stopOnEra; i++) {
+        for (int i = 0; i < stopOnEra.get(); i++) {
             era = i;
             insertClonesIntoPopulation(paretoFront.toArray(new KeyedTuple[0]), 10);
             evaluatePopulationFitness();
@@ -147,12 +143,15 @@ public class ParetoGA {
 
     private Map<KeyedTuple<DecValChromosome, Double>, Integer> getDominanceRelations() {
         // 0 - undominated
+        Set<KeyedTuple<DecValChromosome, Double>> all = new HashSet<KeyedTuple<DecValChromosome, Double>>();
+        all.addAll(paretoFront);
+        all.addAll(Arrays.asList(population));
         Map<KeyedTuple<DecValChromosome, Double>, Integer> keys =
                 new IdentityHashMap<KeyedTuple<DecValChromosome, Double>, Integer>();
 
-        for (KeyedTuple<DecValChromosome, Double> e : population) {
+        for (KeyedTuple<DecValChromosome, Double> e : all) {
             keys.put(e, 0);
-            for (KeyedTuple<DecValChromosome, Double> e2 : population) {
+            for (KeyedTuple<DecValChromosome, Double> e2 : all) {
                 if (e.isBelow(e2)) {
                     keys.put(e, keys.get(e) + 1);
                 }
